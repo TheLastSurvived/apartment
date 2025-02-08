@@ -89,24 +89,7 @@
             {% endif %}
             {% endwith %}
             <div class="row">
-                <!-- Изображение товара -->
-                <div class="col-md-6">
-                    <div class="gallery-main">
-                        <img id="mainImage" src="../../static/img/upload/{{article.image_name}}" width="100%" alt="Основное изображение товара">
-                       <!-- <div class="row gallery-thumbnails my-3">
-                            <div class="col-6 col-md-4">
-                                <img src="../../static/img/ad1.jpg" onclick="changeImage(this.src)" alt="Миниатюра 1">
-                            </div>
-                            <div class="col-6 col-md-4">
-                                <img src="../../static/img/ad2.jpg" onclick="changeImage(this.src)" alt="Миниатюра 2">
-                            </div>
-                            <div class="col-6 col-md-4">
-                                <img src="../../static/img/ad3.jpg" onclick="changeImage(this.src)" alt="Миниатюра 3">
-                            </div>
-                        </div>-->
-                    </div>
-                  
-                </div>
+               
                 <!-- Информация о товаре -->
                 <div class="col-md-6">
                     {%if article.id_user==active_user.id%}
@@ -154,7 +137,26 @@
                       </div>
                     {%endif%}
                 </div>
-            </div>
+          
+
+             <!-- Изображение товара -->
+             <div class="col-md-6">
+              <div class="gallery-main">
+                  <img id="mainImage" src="../../static/img/upload/{{article.image_name}}" width="100%" alt="Основное изображение товара">
+                 <!-- <div class="row gallery-thumbnails my-3">
+                      <div class="col-6 col-md-4">
+                          <img src="../../static/img/ad1.jpg" onclick="changeImage(this.src)" alt="Миниатюра 1">
+                      </div>
+                      <div class="col-6 col-md-4">
+                          <img src="../../static/img/ad2.jpg" onclick="changeImage(this.src)" alt="Миниатюра 2">
+                      </div>
+                      <div class="col-6 col-md-4">
+                          <img src="../../static/img/ad3.jpg" onclick="changeImage(this.src)" alt="Миниатюра 3">
+                      </div>
+                  </div>-->
+              </div>
+            
+          </div>
         </div>
     </main>
     {% endblock %}
