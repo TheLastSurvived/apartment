@@ -7,13 +7,7 @@
 {{ ckeditor.load() }}
     <main>
         <div class="container my-5">
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-              <li class="breadcrumb-item text-success"><a href="/">Главная</a></li>
-              <li class="breadcrumb-item"><a href="/catalog">Каталог</a></li>
-              <li class="breadcrumb-item active" aria-current="page">{{article.title}}</li>
-            </ol>
-          </nav>
+       
             {%if 'name' in session and active_user.id==article.id_user or active_user.root==1%}
             <button
               type="button"

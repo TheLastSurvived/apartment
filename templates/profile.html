@@ -69,6 +69,7 @@
             <div class="col-md-6">
                 <h2>Мои обьявления</h2>
                 <div class="row g-3">
+                  {%if articles%}
                   {%for article in articles%}
                   <div class="col-md-6">
                     <a href="/card/{{article.id}}" class="card-link">
@@ -87,6 +88,9 @@
                     </a>
                   </div>
                   {%endfor%}
+                  {%else%}
+                  <p>Список пуст!</p>
+                  {%endif%}
                 </div>
             </div>
         </div>

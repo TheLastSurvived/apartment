@@ -22,8 +22,6 @@ db = SQLAlchemy(app)
 ckeditor = CKEditor(app)
 
 
-
-
 class Users(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     name = db.Column(db.String(100))
@@ -80,19 +78,23 @@ class AdminIndex(AdminIndexView):
 
 admin = Admin(app, name='MotoShop',index_view=AdminIndex())
 
+
 class OrdersView(ModelView):
     column_display_pk = True 
     column_hide_backrefs = False
     column_list = ['id', 'id_user','id_article', 'date']
+    
     
 class ArticlesView(ModelView):
     column_display_pk = True 
     column_hide_backrefs = False
     column_list = ['id', 'title','text', 'image_name','category','price','type_app','address','id_user']
 
+
 admin.add_view(ModelView(Users, db.session))
 admin.add_view(ArticlesView(Articles, db.session))
 admin.add_view(OrdersView(Orders, db.session))
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -122,7 +124,7 @@ def profile():
         db.session.add(article)
         db.session.commit()
         flash("Запись добавлена!", category="ok")
-        return redirect(url_for("catalog"))
+        return redirect(url_for("profile"))
     return render_template("profile.html",articles=articles,orders=orders)
 
 
