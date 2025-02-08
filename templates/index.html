@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}
+Аренда360
+{% endblock %}
+
+{% block main %}
+
+    <main>
+      <div id="myCarousel" class="carousel slide mb-6" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="slide1">
+              <div class="container">
+                <div class="carousel-caption text-end">
+                  <h1>Аренда жилья без забот!</h1>
+                  <p>
+                    Снимите жилье, которое станет вашим домом, и наслаждайтесь
+                    каждым моментом, проведенным в нем!
+                  </p>
+                  <p>
+                    <a class="btn btn-lg btn-warning" href="/catalog"
+                      >Перейти в каталог</a
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="slide2">
+              <div class="container">
+                <div class="carousel-caption">
+                  <h1>Комфорт и уют — в каждом квадратном метре!</h1>
+                  <p>
+                    Найдите свое идеальное жилье с нами — комфорт, удобство и
+                    доступные цены в одном месте!
+                  </p>
+                  <p>
+                    <a class="btn btn-lg btn-warning" href="/catalog"
+                      >Перейти в каталог</a
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="slide3">
+              <div class="container">
+                <div class="carousel-caption text-start">
+                  <h1>Найдите свой уголок комфорта!</h1>
+                  <p>
+                    Откройте для себя мир аренды жилья: удобные условия, широкий
+                    выбор и поддержка на каждом этапе!
+                  </p>
+                  <p>
+                    <a class="btn btn-lg btn-warning" href="/catalog"
+                      >Перейти в каталог</a
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button
+          class="carousel-control-prev"
+          type="button"
+          data-bs-target="#myCarousel"
+          data-bs-slide="prev"
+        >
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button
+          class="carousel-control-next"
+          type="button"
+          data-bs-target="#myCarousel"
+          data-bs-slide="next"
+        >
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+
+      <div class="container my-5">
+        <h1 class="text-center">Наши предложения</h1>
+        <div class="row">
+          {%for article in random_articles%}
+          <div class="col-md-4">
+            <a href="/card/{{article.id}}" class="card-link">
+              <div class="card">
+                <img
+                  src="../static/img/upload/{{article.image_name}}"
+                  class="card-img-top"
+                  alt="Уютная квартира"
+                />
+                <div class="card-body">
+                  <h5 class="card-title">{{article.title}}</h5>
+                  <p class="font-weight-bold">{{article.address}}</p>
+                  <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                </div>
+              </div>
+            </a>
+          </div>
+          {%endfor%}
+         
+        </div>
+        <a href="/catalog" class="my-3 btn btn-success" >Смотреть каталог</a>
+      </div>
+
+      <div class="container marketing my-5">
+        <h1 class="text-center my-5">Причины обратьться к нам</h1>
+        <div class="row featurette">
+          <div class="col-md-7 order-md-2 ad">
+            <h2 class="featurette-heading fw-normal lh-1">
+              Удобство и доступность
+            </h2>
+            <p class="lead">
+              Аренда квартиры предоставляет возможность быстро и удобно найти
+              жилье в нужном районе, что идеально подходит для путешественников
+              и тех, кто ищет временное жилье.
+            </p>
+          </div>
+          <div class="col-md-5 order-md-1">
+            <img src="../static/img/ad1.jpg" width="100%" alt="" />
+          </div>
+        </div>
+
+        <hr class="featurette-divider" />
+
+        <div class="row featurette">
+          <div class="col-md-7 ad">
+            <h2 class="featurette-heading fw-normal lh-1">
+              Финансовая свобода
+            </h2>
+            <p class="lead">
+              С арендой вы избегаете крупных первоначальных затрат на покупку
+              недвижимости и можете использовать сэкономленные средства для
+              других важных целей.
+            </p>
+          </div>
+          <div class="col-md-5">
+            <img src="../static/img/ad2.jpg" width="100%" alt="" />
+          </div>
+        </div>
+
+        <hr class="featurette-divider" />
+
+        <div class="row featurette">
+          <div class="col-md-7 order-md-2 ad">
+            <h2 class="featurette-heading fw-normal lh-1">
+              Гибкость и мобильность
+            </h2>
+            <p class="lead">
+              Аренда квартиры позволяет легко менять место жительства в
+              зависимости от жизненных обстоятельств, что особенно актуально для
+              студентов и профессионалов, работающих в разных городах.
+            </p>
+          </div>
+          <div class="col-md-5 order-md-1">
+            <img src="../static/img/ad3.jpg" width="100%" alt="" />
+          </div>
+        </div>
+
+        <!-- Three columns of text below the carousel -->
+        <div class="row my-5 text-center">
+          <h2 class="my-3">Отзывы наших клиентов</h2>
+          <div class="col-lg-3">
+            <img src="../static/img/review1.jpg" class="review" width="140" alt="" />
+
+            <h2 class="fw-normal">Мария</h2>
+            <p>
+              Я арендовала квартиру через этот сайт и осталась очень довольна!
+              Удобный интерфейс, множество вариантов на любой вкус и бюджет.
+              Служба поддержки быстро ответила на все мои вопросы. Рекомендую!
+            </p>
+          </div>
+          <!-- /.col-lg-4 -->
+          <div class="col-lg-3">
+            <img src="../static/img/review2.jpg" class="review" width="140" alt="" />
+            <h2 class="fw-normal">Максим</h2>
+            <p>
+              "Отличный сервис! Нашел идеальную квартиру для своей семьи всего
+              за несколько дней. Все фотографии и описания были точными, что
+              помогло избежать разочарований. Спасибо!"
+            </p>
+          </div>
+
+          <div class="col-lg-3">
+            <img src="../static/img/review3.jpg" class="review" width="140" alt="" />
+            <h2 class="fw-normal">Елена</h2>
+            <p>
+              "Как студент, я искала недорогое жилье на время учебы, и этот сайт
+              стал настоящей находкой! Легко фильтровать варианты по цене и
+              местоположению. Очень довольна своим выбором!"
+            </p>
+          </div>
+
+          <div class="col-lg-3">
+            <img src="../static/img/review4.jpg" class="review" width="140" alt="" />
+            <h2 class="fw-normal">Игорь</h2>
+            <p>
+              "Переехал в другой город по работе и воспользовался этим сайтом
+              для аренды квартиры. Все прошло гладко, и я нашел отличное жилье в
+              центре. Профессиональный подход и удобный поиск!"
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    {% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}
+Каталог
+{% endblock %}
+
+{% block main %}
+  <main>
+
+    <div class="container my-5">
+        <h1>Каталог</h1>
+        {% with messages = get_flashed_messages(True) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <p class="m-2 flash {{category}}">{{message}}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+  <div class="row">
+    <div class="col-md-8">
+      <div class="row g-3">
+        {%if articles%}
+        {%for article in articles%}
+        <div class="col-md-6">
+          <a href="/card/{{article.id}}" class="card-link">
+            <div class="card">
+              <img
+                src="./static/img/upload/{{article.image_name}}"
+                class="card-img-top"
+                alt="{{article.title}}"
+              />
+              <div class="card-body">
+                <h5 class="card-title">{{article.title}}</h5>
+                <p class="font-weight-bold">{{article.address}}</p>
+                <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+              </div>
+            </div>
+          </a>
+        </div>
+        {%endfor%}
+        
+        {%else%}
+          <p>Ничего не найдено!</p>
+        {%endif%}
+      </div>
+    </div>
+    <div class="col-md-4">
+      <form method="GET" action="/catalog" class="">
+        <label for="category" class="form-label">Категория:</label>
+        <select name="category" id="category" class="form-select">
+            <option value="">Все</option>
+            <option value="Квартиры">Квартиры</option>
+            <option value="Комнаты">Комнаты</option>
+            <option value="Дома">Дома</option>
+        </select>
+  
+        <label for="type_app" class="form-label">Тип аренды:</label>
+        <select name="type_app" id="type_app" class="form-select">
+            <option value="">Все</option>
+            <option value="Type1">Посуточная</option>
+            <option value="Type2">Ежемесячная</option>
+        </select>
+    
+        <label for="min_price" class="form-label">Минимальная цена:</label>
+        <input type="number" class="form-control" name="min_price" id="min_price">
+    
+        <label for="max_price" class="form-label">Максимальная цена:</label>
+        <input type="number" class="form-control" name="max_price" id="max_price">
+    
+        
+    
+        <button type="submit" class="btn btn-success my-3">Применить</button>
+    </form>
+    </div>
+
+    
+  </div>
+       
+      </div>
+  </main>
+  {% endblock %}

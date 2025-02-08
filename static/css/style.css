@@ -1,0 +1,99 @@
+.icon {
+  width: 50px;
+  margin-right: 10px;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffff;
+  border-radius: 30px;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+.flash.ok {
+  color: #198754;
+  font-weight: bold;
+}
+
+.flash.bad {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.slide1 {
+  height: 90vh; /* Высота на весь экран */
+  background-image: url("../img/slide1.jpg");
+  background-size: cover; /* Обрезать изображение, сохраняя пропорции */
+  background-position: center; /* Центрировать изображение */
+  background-repeat: no-repeat; /* Не повторять изображение */
+}
+
+.slide2 {
+  width: 100%; /* Ширина на весь экран */
+  height: 90vh; /* Высота на весь экран */
+  background-image: url("../img/slide2.jpg");
+  background-size: cover; /* Обрезать изображение, сохраняя пропорции */
+  background-position: center; /* Центрировать изображение */
+  background-repeat: no-repeat; /* Не повторять изображение */
+}
+
+.slide3 {
+  width: 100%; /* Ширина на весь экран */
+  height: 90vh; /* Высота на весь экран */
+  background-image: url("../img/slide3.jpg");
+  background-size: cover; /* Обрезать изображение, сохраняя пропорции */
+  background-position: center; /* Центрировать изображение */
+  background-repeat: no-repeat; /* Не повторять изображение */
+}
+
+footer {
+  flex: 0 0 auto;
+}
+
+.ad {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.review {
+  border-radius: 50%;
+}
+
+.card-link{
+    text-decoration: none;
+}
+
+
+.gallery-main img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.gallery-thumbnails img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+.gallery-thumbnails img:hover {
+  opacity: 0.7;
+}
+.gallery-thumbnails .col {
+  padding: 5px;
+}
+
+.breadcrumb-item{
+  color: #198754;
+}

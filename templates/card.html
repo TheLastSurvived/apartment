@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}
+Уютная квартира в центре города
+{% endblock %}
+
+{% block main %}
+{{ ckeditor.load() }}
+    <main>
+        <div class="container my-5">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item text-success"><a href="/">Главная</a></li>
+              <li class="breadcrumb-item"><a href="/catalog">Каталог</a></li>
+              <li class="breadcrumb-item active" aria-current="page">{{article.title}}</li>
+            </ol>
+          </nav>
+            {%if 'name' in session and active_user.id==article.id_user or active_user.root==1%}
+            <button
+              type="button"
+              class="btn btn-warning mb-3"
+              data-bs-toggle="modal"
+              data-bs-target="#exampleModal"
+            >
+              Изменить
+            </button>
+            <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
+        
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Изменить запись</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form method="post" enctype="multipart/form-data">
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Название</label>
+                        <input type="text" value="{{article.title}}" id="disabledTextInput" class="form-control" name="title" placeholder="Название"
+                          required>
+                      </div>
+                      <div class="mb-3">
+                        <label for="exampleInputPassword1" class="form-label">Адрес</label>
+                        <input type="text" value="{{article.address}}" class="form-control" name="address" placeholder="Адрес" id="exampleInputPassword1" required>
+                      </div>
+                    
+          
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Цена, руб.</label>
+                        <input type="number" value="{{article.price}}" id="disabledTextInput" class="form-control" name="price" placeholder="Цена, руб."
+                          required>
+                      </div>
+
+                      <div class="mb-3">
+                        <label for="disabledSelect" class="form-label">Категория</label>
+                        <select name="category"  id="disabledSelect" class="form-select">
+                          <option value="Квартиры">Квартиры</option>
+                          <option value="Комнаты">Комнаты</option>
+                          <option value="Дома">Дома</option>
+                        </select>                     
+                     </div>
+
+                     <div class="mb-3">
+                        <label for="disabledSelect" class="form-label">Тип аренды</label>
+                        <select name="type" id="disabledSelect" class="form-select">
+                          <option value="Посуточная">Посуточная</option>
+                          <option value="Ежемесячная">Ежемесячная</option>
+                        </select>                     
+                     </div>
+                
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Изображение</label>
+                        <input type="file" id="disabledTextInput" name="image" class="form-control" accept=".jpg,.jpeg,.png"
+                          >
+                      </div>
+                      <div class="mb-3">
+                        <h3>Содержимое</h3>
+                        {{ ckeditor.create(value=article.text) }}
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="submit" class="btn btn-success">Изменить запись</button>
+                  </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {%endif%}
+            {% with messages = get_flashed_messages(True) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <p class="m-2 flash {{category}}">{{message}}</p>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <div class="row">
+                <!-- Изображение товара -->
+                <div class="col-md-6">
+                    <div class="gallery-main">
+                        <img id="mainImage" src="../../static/img/upload/{{article.image_name}}" width="100%" alt="Основное изображение товара">
+                       <!-- <div class="row gallery-thumbnails my-3">
+                            <div class="col-6 col-md-4">
+                                <img src="../../static/img/ad1.jpg" onclick="changeImage(this.src)" alt="Миниатюра 1">
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <img src="../../static/img/ad2.jpg" onclick="changeImage(this.src)" alt="Миниатюра 2">
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <img src="../../static/img/ad3.jpg" onclick="changeImage(this.src)" alt="Миниатюра 3">
+                            </div>
+                        </div>-->
+                    </div>
+                  
+                </div>
+                <!-- Информация о товаре -->
+                <div class="col-md-6">
+                    {%if article.id_user==active_user.id%}
+                    <p class="text-muted">Это ваше обьявление!</p>
+                    {%endif%}
+                  
+                    <h1>{{article.title}}</h1>
+                    <p class="text-muted">Категория: {{article.category}}</p>
+                    <p class="text-muted">Адрес: {{article.address}}</p>
+                    <p class="lead">Тип аренды: <strong>{{article.type_app}}</strong></p>
+                    <p class="lead">Цена: <strong>{{article.price}} руб.</strong></p>
+                    {% autoescape false %} {{article.text}} {% endautoescape %}
+                   {%if not active_user  %}
+                   <p>Для заказа необходимо <a href="/reg" class="text-success">зарегистрироваться!</a> </p>
+                   {%elif article.id_user==active_user.id%}
+                  
+                   {%elif check%}
+                   <p class="text-danger">Эта жилплощадь уже занята!</p>
+                   {%else%}
+                    <button class="btn btn-success btn-lg" data-bs-toggle="modal"
+                    data-bs-target="#exampleModal2">Забронировать</button>
+
+                    <div class="modal fade" id="exampleModal2" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h1 class="modal-title fs-5" id="exampleModalLabel">Выберите дату</h1>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              <form method="post" enctype="multipart/form-data"  action="{{url_for('add_order', id_user=active_user.id, id_article=article.id)}}" >
+                                <div class="mb-3">
+                                    <div class="mb-3">
+                                        <label for="exampleInputPassword1" class="form-label">Дата</label>
+                                        <input type="date" name="date" class="form-control" id="exampleInputPassword1" required>
+                                      </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                              <button type="submit" class="btn btn-success">Выбрать</button>
+                            </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    {%endif%}
+                </div>
+            </div>
+        </div>
+    </main>
+    {% endblock %}
