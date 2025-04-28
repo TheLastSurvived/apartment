@@ -130,3 +130,11 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+.chat-container {
+  scroll-behavior: smooth;
+}
+
+.message-content {
+  word-wrap: break-word;
+}

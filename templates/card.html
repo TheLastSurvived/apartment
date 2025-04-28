@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}
-Уютная квартира в центре города
+{{article.title}}
 {% endblock %}
 
 {% block main %}
@@ -125,7 +125,10 @@
                   
                    {%elif check%}
                    <p class="text-danger">Эта жилплощадь уже занята!</p>
+                   <a href="/chat/{{article.id}}/{{article.users.id}}" class="btn btn-success btn-lg">Задачать вопрос владельцу</a>
+
                    {%else%}
+                   <a href="/chat/{{article.id}}/{{article.users.id}}" class="btn btn-success btn-lg">Задачать вопрос владельцу</a>
                     <button class="btn btn-success btn-lg" data-bs-toggle="modal"
                     data-bs-target="#exampleModal2">Забронировать</button>
 

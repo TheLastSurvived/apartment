@@ -10,7 +10,7 @@ from flask_admin import AdminIndexView, expose
 from flask_admin.contrib.sqlamodel import ModelView
 from flask_admin import Admin
 from flask_migrate import Migrate
-
+from sqlalchemy import or_,case,and_  
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -66,6 +66,22 @@ class Orders(db.Model):
         return 'Orders %r' % self.id 
 
 
+class Messages(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    
+    sender = db.relationship('Users', foreign_keys=[sender_id])
+    recipient = db.relationship('Users', foreign_keys=[recipient_id])
+    article = db.relationship('Articles')  
+      
+    def __repr__(self):
+        return f'<Message {self.id}>'
+
 class AdminIndex(AdminIndexView):
     @expose('/', methods=['GET', 'POST'])
     def index(self):
@@ -103,6 +119,122 @@ admin.add_view(OrdersView(Orders, db.session))
 def index():
     random_articles = Articles.query.order_by(func.random()).limit(3).all()
     return render_template("index.html",random_articles=random_articles)
+
+
+@app.route('/chat/<int:article_id>/<int:recipient_id>')
+def chat(article_id, recipient_id):
+    current_user = Users.query.filter_by(email=session['name']).first()
+    article = Articles.query.get_or_404(article_id)
+    recipient = Users.query.get_or_404(recipient_id)
+    
+    # Получаем все сообщения между текущим пользователем и получателем для данной статьи
+    messages = Messages.query.filter(
+        ((Messages.sender_id == current_user.id) & (Messages.recipient_id == recipient_id)) |
+        ((Messages.sender_id == recipient_id) & (Messages.recipient_id == current_user.id)),
+        Messages.article_id == article_id
+    ).order_by(Messages.timestamp.asc()).all()
+    
+    # Помечаем сообщения как прочитанные
+    for message in messages:
+        if message.recipient_id == current_user.id and not message.is_read:
+            message.is_read = True
+            db.session.commit()
+    
+    return render_template('chat.html', 
+                         messages=messages, 
+                         article=article, 
+                         recipient=recipient,
+                         current_user=current_user)
+
+@app.route('/send_message/<int:article_id>/<int:recipient_id>', methods=['POST'])
+def send_message(article_id, recipient_id):
+    current_user = Users.query.filter_by(email=session['name']).first()
+    content = request.form.get('content')
+    if content:
+        new_message = Messages(
+            content=content,
+            sender_id=current_user.id,
+            recipient_id=recipient_id,
+            article_id=article_id
+        )
+        db.session.add(new_message)
+        db.session.commit()
+    return redirect(url_for('chat', article_id=article_id, recipient_id=recipient_id))
+
+
+@app.route('/my_chats')
+def my_chats():
+    current_user = Users.query.filter_by(email=session['name']).first()
+    
+    # Получаем уникальные комбинации article_id + собеседник
+    chat_combinations = db.session.query(
+        Messages.article_id,
+        case(
+            (Messages.sender_id == current_user.id, Messages.recipient_id),
+            else_=Messages.sender_id
+        ).label('interlocutor_id')
+    ).filter(
+        or_(
+            Messages.sender_id == current_user.id,
+            Messages.recipient_id == current_user.id
+        )
+    ).distinct().all()
+    
+    # Собираем данные для каждого чата
+    chats = []
+    for combo in chat_combinations:
+        article = Articles.query.get(combo.article_id)
+        interlocutor = Users.query.get(combo.interlocutor_id)
+        
+        # Получаем количество непрочитанных сообщений
+        unread_count = Messages.query.filter(
+            Messages.article_id == combo.article_id,
+            Messages.sender_id == combo.interlocutor_id,
+            Messages.recipient_id == current_user.id,
+            Messages.is_read == False
+        ).count()
+        
+        # Получаем последнее сообщение (для preview)
+        last_message = Messages.query.filter(
+            or_(
+                and_(
+                    Messages.sender_id == current_user.id,
+                    Messages.recipient_id == combo.interlocutor_id,
+                    Messages.article_id == combo.article_id
+                ),
+                and_(
+                    Messages.sender_id == combo.interlocutor_id,
+                    Messages.recipient_id == current_user.id,
+                    Messages.article_id == combo.article_id
+                )
+            )
+        ).order_by(Messages.timestamp.desc()).first()
+        
+        chats.append({
+            'article_id': combo.article_id,
+            'article_title': article.title,
+            'interlocutor_id': combo.interlocutor_id,
+            'interlocutor_name': f"{interlocutor.name} {interlocutor.surname}",
+            'unread_count': unread_count,
+            'last_message_preview': last_message.content[:50] + "..." if last_message else "",
+            'last_message_time': last_message.timestamp if last_message else None
+        })
+    
+    # Сортируем по времени последнего сообщения
+    chats.sort(key=lambda x: x['last_message_time'] or datetime.min, reverse=True)
+    
+    return render_template('my_chats.html', chats=chats)
+
+
+@app.context_processor
+def inject_unread_messages():
+
+    if 'name' in session:
+        current_user = Users.query.filter_by(email=session['name']).first()
+
+        unread_count = Messages.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+        return dict(unread_messages=unread_count)
+    return dict(unread_messages=0)
 
 
 @app.route('/profile', methods=['GET', 'POST'])

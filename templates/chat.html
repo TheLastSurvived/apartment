@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Чат с {{ recipient.name }}{% endblock %}
+
+{% block main %}
+<main>
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <h2>Чат по аренде: {{ article.title }}</h2>
+                <p>Собственник: {{ recipient.name }} {{ recipient.surname }}</p>
+                
+                <div class="chat-container mb-4" style="height: 500px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+                    {% for message in messages %}
+                    <div class="message mb-3 {% if message.sender_id == current_user.id %}text-end{% endif %}">
+                        <div class="d-flex {% if message.sender_id == current_user.id %}justify-content-end{% else %}justify-content-start{% endif %}">
+                            <div class="message-content p-3 rounded" 
+                                 style="max-width: 70%; 
+                                        {% if message.sender_id == current_user.id %}background-color: #e3f2fd;{% else %}background-color: #f5f5f5;{% endif %}">
+                                <p>{{ message.content }}</p>
+                                <small class="text-muted">{{ message.timestamp.strftime('%d.%m.%Y %H:%M') }}</small>
+                                {% if message.sender_id == current_user.id and message.is_read %}
+                                <small class="text-muted float-end">✓ Прочитано</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <form method="POST" action="{{ url_for('send_message', article_id=article.id, recipient_id=recipient.id) }}">
+                    <div class="input-group mb-3">
+                        <input type="text" name="content" class="form-control" placeholder="Напишите сообщение..." required>
+                        <button class="btn btn-success" type="submit">Отправить</button>
+                    </div>
+                </form>
+                
+                <a href="{{ url_for('card', id=article.id) }}" class="btn btn-secondary mt-3">Вернуться к объявлению</a>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

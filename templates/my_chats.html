@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Мои чаты{% endblock %}
+
+{% block main %}
+<main>
+    <div class="container my-5">
+        <h2>Мои чаты</h2>
+        
+        {% if not chats %}
+        <div class="alert alert-info">У вас пока нет активных чатов</div>
+        {% else %}
+        <div class="list-group">
+            {% for chat in chats %}
+            <a href="{{ url_for('chat', article_id=chat.article_id, recipient_id=chat.interlocutor_id) }}" 
+               class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">{{ chat.article_title }}</h5>
+                        <p class="mb-1">С: {{ chat.interlocutor_name }}</p>
+                        {% if chat.last_message_preview %}
+                        <p class="mb-0 text-muted small">{{ chat.last_message_preview }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        {% if chat.unread_count > 0 %}
+                        <span class="badge bg-danger rounded-pill">{{ chat.unread_count }}</span>
+                        {% endif %}
+                        {% if chat.last_message_time %}
+                        <div class="text-muted small">
+                            {{ chat.last_message_time.strftime('%d.%m.%Y') }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
