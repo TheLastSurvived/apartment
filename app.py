@@ -9,6 +9,7 @@ from  sqlalchemy.sql.expression import func
 from flask_admin import AdminIndexView, expose
 from flask_admin.contrib.sqlamodel import ModelView
 from flask_admin import Admin
+from flask_migrate import Migrate
 
 
 app = Flask(__name__)
@@ -20,6 +21,7 @@ app.config['UPLOAD_FOLDER'] = 'static/img/upload'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 db = SQLAlchemy(app)
 ckeditor = CKEditor(app)
+migrate = Migrate(app, db)
 
 
 class Users(db.Model):
@@ -29,6 +31,7 @@ class Users(db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100), unique=True)
     root = db.Column(db.Integer, default=0)
+    avatar = db.Column(db.String(120), default='default.jpg')
     
     articles = db.relationship('Articles', backref='users', lazy=True)
        
@@ -276,6 +279,35 @@ def inject_user():
         if 'name' in session:
             return Users.query.filter_by(email=session['name']).first()
     return dict(active_user=get_user_name())
+
+
+@app.route('/edit_profile', methods=['POST'])
+def edit_profile():
+    if request.method == 'POST':
+        total_user = Users.query.filter_by(email=session['name']).first()
+        total_user.name = request.form.get('name')
+        total_user.surname = request.form.get('surname')
+        total_user.email = request.form.get('email')
+        total_user.ppassword = md5(request.form.get('password').encode()).hexdigest()
+        db.session.commit()
+        session.pop('name', None)
+        session['name'] = request.form.get('email')
+        flash("Данные обновлены!", category="ok")
+    return redirect(url_for("profile"))
+
+
+@app.route('/load_avatar', methods=['POST'])
+def load_avatar():
+    if request.method == 'POST':
+        image = request.files['avatar']
+        total_user = Users.query.filter_by(email=session['name']).first()
+        filename = secure_filename(image.filename)
+        pic_name = str(uuid.uuid4()) + "_" + filename
+        image.save("static/img/upload/" + pic_name)
+        total_user.avatar = pic_name
+        db.session.commit()
+        flash("Аватар обновлен!", category="ok")
+        return redirect(url_for("profile"))
 
 
 if __name__ == '__main__':

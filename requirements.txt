@@ -16,7 +16,8 @@ Flask-Admin
 Flask-Bootstrap    
 Flask-CKEditor     
 Flask-Mail         
-Flask-SQLAlchemy   
+Flask-SQLAlchemy  
+Flask-Migrate 
 greenlet           
 idna               
 itsdangerous       

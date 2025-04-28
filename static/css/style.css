@@ -97,3 +97,36 @@ footer {
 .breadcrumb-item{
   color: #198754;
 }
+
+
+.cke_notifications_area{
+  display: none;
+}
+
+
+.img-thumbnail {
+  transition: transform 0.3s;
+}
+.img-thumbnail:hover {
+  transform: scale(1.05);
+}
+.card {
+  transition: box-shadow 0.3s;
+}
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
