@@ -420,7 +420,7 @@ def edit_profile():
         total_user.name = request.form.get('name')
         total_user.surname = request.form.get('surname')
         total_user.email = request.form.get('email')
-        total_user.ppassword = md5(request.form.get('password').encode()).hexdigest()
+        total_user.password = md5(request.form.get('password').encode()).hexdigest()
         db.session.commit()
         session.pop('name', None)
         session['name'] = request.form.get('email')
