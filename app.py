@@ -95,7 +95,7 @@ class AdminIndex(AdminIndexView):
             abort(401)
 
 
-admin = Admin(app, name='MotoShop',index_view=AdminIndex())
+admin = Admin(app, name='Аренда360',index_view=AdminIndex())
 
 
 class OrdersView(ModelView):
@@ -110,9 +110,16 @@ class ArticlesView(ModelView):
     column_list = ['id', 'title','text', 'image_name','category','price','type_app','address','id_user']
 
 
+class MessagesView(ModelView):
+    column_display_pk = True 
+    column_hide_backrefs = False
+    column_list = ['id', 'content','timestamp', 'sender_id','recipient_id','article_id','is_read']
+
+
 admin.add_view(ModelView(Users, db.session))
 admin.add_view(ArticlesView(Articles, db.session))
 admin.add_view(OrdersView(Orders, db.session))
+admin.add_view(MessagesView(Messages, db.session))
 
 
 @app.route('/', methods=['GET', 'POST'])
