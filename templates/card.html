@@ -136,33 +136,92 @@
                    <a href="/chat/{{article.id}}/{{article.users.id}}" class="btn btn-success btn-lg">Задачать вопрос владельцу</a>
                     <button class="btn btn-success btn-lg" data-bs-toggle="modal"
                     data-bs-target="#exampleModal2">Забронировать</button>
-
+ {%endif%}
                     <div class="modal fade" id="exampleModal2" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                          <div class="modal-content">
-                            <div class="modal-header">
-                              <h1 class="modal-title fs-5" id="exampleModalLabel">Выберите дату</h1>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                              <form method="post" enctype="multipart/form-data"  action="{{url_for('add_order', id_user=active_user.id, id_article=article.id)}}" >
-                                <div class="mb-3">
-                                    <div class="mb-3">
-                                        <label for="exampleInputPassword1" class="form-label">Дата</label>
-                                        <input type="date" name="date" class="form-control" id="exampleInputPassword1" required>
-                                      </div>
-                            </div>
-                            <div class="modal-footer">
-                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                              <button type="submit" class="btn btn-success">Выбрать</button>
-                            </div>
-                            </form>
-                          </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Выберите дату</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" enctype="multipart/form-data" action="{{url_for('add_order', id_user=active_user.id, id_article=article.id)}}">
+                    <div class="mb-3">
+                        <label for="bookingDate" class="form-label">Доступные даты:</label>
+                        <input type="text" class="form-control" id="datepicker" placeholder="Выберите дату" readonly>
+                        <input type="hidden" name="date" id="selectedDate" required>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                {% if article.type_app == 'Посуточная' %}
+                                    Доступны любые даты, кроме забронированных
+                                {% else %}
+                                    Доступны только первые числа месяцев
+                                {% endif %}
+                            </small>
                         </div>
-                      </div>
-                    {%endif%}
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        <button type="submit" class="btn btn-success">Забронировать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
         </div>
     </main>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('exampleModal2');
+
+    modal.addEventListener('shown.bs.modal', function() {
+        fetch('/get_available_dates/{{article.id}}')
+            .then(response => response.json())
+            .then(availableDates => {
+                const typeApp = '{{article.type_app}}';
+                const config = {
+                    locale: 'ru',
+                    minDate: 'today',
+                    dateFormat: 'Y-m-d',
+                    disableMobile: true,
+                    enable: availableDates, // Поддержка доступных дат
+                    onChange(selectedDates, dateStr) {
+                        document.getElementById('selectedDate').value = dateStr;
+                    }
+                };
+
+                // Дополнительное ограничение для ежемесячной аренды
+                if (typeApp !== 'Посуточная') {
+                    const originalOnChange = config.onChange; // Сохраняем оригинальную функцию
+
+                    config.onChange = function(selectedDates, dateStr, instance) {
+                        originalOnChange(selectedDates, dateStr, instance); // Вызываем оригинальный onChange
+                        if (selectedDates[0] && selectedDates[0].getDate() !== 1) {
+                            instance.clear();
+                            alert('Для ежемесячной аренды доступны только первые числа месяцев');
+                        }
+                    };
+                }
+
+                flatpickr('#datepicker', config);
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки доступных дат:', error);
+            });
+    });
+
+    // Очищаем календарь при закрытии модального окна
+    modal.addEventListener('hidden.bs.modal', function() {
+        const fp = document.querySelector('#datepicker')._flatpickr;
+        if (fp) {
+            fp.clear();
+            fp.destroy();
+        }
+        document.getElementById('selectedDate').value = '';
+    });
+});
+
+</script>
     {% endblock %}

@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, flash, redirect, session, url_for, abort
+from flask import Flask, render_template, request, flash, redirect, session, url_for, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_ckeditor import CKEditor
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 from hashlib import md5
@@ -411,6 +411,44 @@ def add_order(id_user,id_article):
             flash("Некорректный формат даты!", category="bad")
             
     return redirect(url_for("card", id=id_article))
+
+
+@app.route('/get_available_dates/<int:article_id>')
+def get_available_dates(article_id):
+    article = Articles.query.get_or_404(article_id)
+    if not article:
+        return jsonify([])
+    
+    # Получаем забронированные даты
+    booked_orders = Orders.query.filter_by(id_article=article_id).all()
+    booked_dates = [order.date.date() for order in booked_orders if order.date]
+    
+    available_dates = []
+    today = datetime.now().date()
+    
+    if article.type_app == "Посуточная":
+        # Для посуточной - все даты на 3 месяца вперед, кроме забронированных
+        for i in range(90):
+            date = today + timedelta(days=i)
+            if date not in booked_dates:
+                available_dates.append(date.strftime('%Y-%m-%d'))
+    else:
+        # Для ежемесячной - только первые числа месяцев
+        current_month = today.month
+        current_year = today.year
+        
+        for i in range(3):  # 3 месяца вперед
+            month = current_month + i
+            year = current_year
+            if month > 12:
+                month -= 12
+                year += 1
+            
+            date = datetime(year, month, 1).date()
+            if date >= today and date not in booked_dates:
+                available_dates.append(date.strftime('%Y-%m-%d'))
+    
+    return jsonify(available_dates)
 
 
 @app.errorhandler(404)

@@ -69,10 +69,9 @@ footer {
   border-radius: 50%;
 }
 
-.card-link{
-    text-decoration: none;
+.card-link {
+  text-decoration: none;
 }
-
 
 .gallery-main img {
   width: 100%;
@@ -94,15 +93,13 @@ footer {
   padding: 5px;
 }
 
-.breadcrumb-item{
+.breadcrumb-item {
   color: #198754;
 }
 
-
-.cke_notifications_area{
+.cke_notifications_area {
   display: none;
 }
-
 
 .img-thumbnail {
   transition: transform 0.3s;
@@ -137,4 +134,18 @@ footer {
 
 .message-content {
   word-wrap: break-word;
+}
+
+.flatpickr-calendar {
+  margin: 0 auto;
+  font-family: inherit;
+}
+.flatpickr-day.disabled {
+  color: #ccc;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.flatpickr-day.selected {
+  background: #198754;
+  border-color: #198754;
 }
