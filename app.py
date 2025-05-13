@@ -395,10 +395,12 @@ def add_order(id_user,id_article):
         try:
             selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             current_date = datetime.now().date()
-            
+            selected_datetime = datetime.combine(selected_date, datetime.min.time())
+            existing_order = Orders.query.filter_by(date=selected_datetime, id_article=id_article).first()
+            print(existing_order)
             if selected_date < current_date:
                 flash("Нельзя забронировать на прошедшую дату!", category="bad")
-            elif Orders.query.filter_by(date=selected_date, id_article=id_article).first():
+            elif existing_order:
                 flash("Эта дата уже занята!", category="bad")
             else:
                 order = Orders(date=selected_date, id_user=id_user, id_article=id_article)
