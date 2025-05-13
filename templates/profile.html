@@ -94,7 +94,10 @@
                                 <label for="name" class="form-label">Название</label>
                                 <input type="text" name="name" class="form-control" placeholder="Название" id="name" required>
                             </div>
-
+                            <div class="mb-3">
+                                <label for="count_rooms" class="form-label">Количество комнат</label>
+                                <input type="number" name="count_rooms" class="form-control" placeholder="Количество комнат" id="count_rooms" required>
+                            </div>
                             <div class="mb-3">
                                 <label for="address" class="form-label">Адрес</label>
                                 <input type="text" class="form-control" name="address" placeholder="Адрес" id="address" required>
@@ -202,6 +205,7 @@
                           <tr>
                               <th scope="col">№</th>
                               <th scope="col">Адрес</th>
+                               <th scope="col">Дата</th>
                               <th scope="col">Действия</th>
                           </tr>
                       </thead>
@@ -210,6 +214,7 @@
                           <tr>
                               <td>{{order.id}}</td>
                               <td><a href="/card/{{order.article.id}}" class="text-decoration-none">{{order.article.address}}</a></td>
+                              <td>{{order.date.strftime('%d.%m.%Y')}}</td>
                               <td>
                                   <a href="/delete-order/{{order.id}}" class="btn btn-sm btn-outline-danger">
                                       Удалить

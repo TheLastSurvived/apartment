@@ -5,77 +5,102 @@
 
 {% block main %}
   <main>
-
     <div class="container my-5">
         <h1>Каталог</h1>
         {% with messages = get_flashed_messages(True) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <p class="m-2 flash {{category}}">{{message}}</p>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <p class="m-2 flash {{category}}">{{message}}</p>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
     
-  <div class="row">
-    <div class="col-md-8">
-      <div class="row g-3">
-        {%if articles%}
-        {%for article in articles%}
-        <div class="col-md-6">
-          <a href="/card/{{article.id}}" class="card-link">
-            <div class="card">
-              <img
-                src="./static/img/upload/{{article.image_name}}"
-                class="card-img-top"
-                alt="{{article.title}}"
-              />
-              <div class="card-body">
-                <h5 class="card-title">{{article.title}}</h5>
-                <p class="font-weight-bold">{{article.address}}</p>
-                <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
-              </div>
+      <div class="row">
+        <div class="col-md-8">
+          <div class="row g-3">
+            {%if articles%}
+            {%for article in articles%}
+            <div class="col-md-6">
+              <a href="/card/{{article.id}}" class="card-link">
+                <div class="card">
+                  <img
+                    src="./static/img/upload/{{article.image_name}}"
+                    class="card-img-top"
+                    alt="{{article.title}}"
+                  />
+                  <div class="card-body">
+                    <h5 class="card-title">{{article.title}}</h5>
+                    <p class="font-weight-bold">{{article.address}}</p>
+                    <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                  </div>
+                </div>
+              </a>
             </div>
-          </a>
+            {%endfor%}
+            
+            {%else%}
+              <p>Ничего не найдено!</p>
+            {%endif%}
+          </div>
         </div>
-        {%endfor%}
+        <div class="col-md-4">
+          <form method="GET" action="/catalog" class="">
+            <label for="category" class="form-label">Категория:</label>
+            <select name="category" id="category" class="form-select" onchange="toggleRoomType()">
+                <option value="">Все</option>
+                <option value="Квартиры" {% if request.args.get('category') == 'Квартиры' %}selected{% endif %}>Квартиры</option>
+                <option value="Комнаты" {% if request.args.get('category') == 'Комнаты' %}selected{% endif %}>Комнаты</option>
+                <option value="Дома" {% if request.args.get('category') == 'Дома' %}selected{% endif %}>Дома</option>
+            </select>
+
+            <div id="roomTypeContainer" style="display: {% if request.args.get('category') == 'Квартиры' %}block{% else %}none{% endif %};">
+                <label for="room_type" class="form-label mt-2">Количество комнат:</label>
+                <select name="room_type" id="room_type" class="form-select">
+                    <option value="">Все</option>
+                    <option value="1" {% if request.args.get('room_type') == '1' %}selected{% endif %}>Однокомнатная</option>
+                    <option value="2" {% if request.args.get('room_type') == '2' %}selected{% endif %}>Двухкомнатная</option>
+                    <option value="3" {% if request.args.get('room_type') == '3' %}selected{% endif %}>Трехкомнатная</option>
+                    <option value="4" {% if request.args.get('room_type') == '4' %}selected{% endif %}>Четырёхкомнатная и более</option>
+                </select>
+            </div>
+    
+            <label for="type_app" class="form-label mt-2">Тип аренды:</label>
+            <select name="type_app" id="type_app" class="form-select">
+                <option value="">Все</option>
+                <option value="Посуточная" {% if request.args.get('type_app') == 'Посуточная' %}selected{% endif %}>Посуточная</option>
+                <option value="Ежемесячная" {% if request.args.get('type_app') == 'Ежемесячная' %}selected{% endif %}>Ежемесячная</option>
+            </select>
         
-        {%else%}
-          <p>Ничего не найдено!</p>
-        {%endif%}
+            <label for="min_price" class="form-label mt-2">Минимальная цена:</label>
+            <input type="number" class="form-control" name="min_price" id="min_price" value="{{ request.args.get('min_price', '') }}">
+        
+            <label for="max_price" class="form-label mt-2">Максимальная цена:</label>
+            <input type="number" class="form-control" name="max_price" id="max_price" value="{{ request.args.get('max_price', '') }}">
+
+            <label for="available_date" class="form-label mt-2">Доступно с:</label>
+            <input type="date" class="form-control" name="available_date" id="available_date" value="{{ request.args.get('available_date', '') }}">
+            
+            <div class="d-flex justify-content-between mt-3">
+                <button type="submit" class="btn btn-success">Применить</button>
+                <a href="/catalog" class="btn btn-outline-secondary">Сбросить фильтры</a>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-    <div class="col-md-4">
-      <form method="GET" action="/catalog" class="">
-        <label for="category" class="form-label">Категория:</label>
-        <select name="category" id="category" class="form-select">
-            <option value="">Все</option>
-            <option value="Квартиры">Квартиры</option>
-            <option value="Комнаты">Комнаты</option>
-            <option value="Дома">Дома</option>
-        </select>
-  
-        <label for="type_app" class="form-label">Тип аренды:</label>
-        <select name="type_app" id="type_app" class="form-select">
-            <option value="">Все</option>
-            <option value="Type1">Посуточная</option>
-            <option value="Type2">Ежемесячная</option>
-        </select>
-    
-        <label for="min_price" class="form-label">Минимальная цена:</label>
-        <input type="number" class="form-control" name="min_price" id="min_price">
-    
-        <label for="max_price" class="form-label">Максимальная цена:</label>
-        <input type="number" class="form-control" name="max_price" id="max_price">
-    
-        
-    
-        <button type="submit" class="btn btn-success my-3">Применить</button>
-    </form>
     </div>
 
-    
-  </div>
-       
-      </div>
+    <script>
+        function toggleRoomType() {
+            const categorySelect = document.getElementById('category');
+            const roomTypeContainer = document.getElementById('roomTypeContainer');
+            
+            if (categorySelect.value === 'Квартиры' || categorySelect.value === 'Дома') {
+                roomTypeContainer.style.display = 'block';
+            } else {
+                roomTypeContainer.style.display = 'none';
+                document.getElementById('room_type').value = '';
+            }
+        }
+    </script>
   </main>
-  {% endblock %}
+{% endblock %}

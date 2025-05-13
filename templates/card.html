@@ -34,6 +34,11 @@
                           required>
                       </div>
                       <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Количество комнат</label>
+                        <input type="number" value="{{article.count_rooms}}" id="disabledTextInput" class="form-control" name="count_rooms" placeholder="Количество комнат"
+                          required>
+                      </div>
+                      <div class="mb-3">
                         <label for="exampleInputPassword1" class="form-label">Адрес</label>
                         <input type="text" value="{{article.address}}" class="form-control" name="address" placeholder="Адрес" id="exampleInputPassword1" required>
                       </div>
@@ -118,14 +123,14 @@
                     <p class="text-muted">Адрес: {{article.address}}</p>
                     <p class="lead">Тип аренды: <strong>{{article.type_app}}</strong></p>
                     <p class="lead">Цена: <strong>{{article.price}} руб.</strong></p>
+                   
+              
                     {% autoescape false %} {{article.text}} {% endautoescape %}
                    {%if not active_user  %}
                    <p>Для заказа необходимо <a href="/reg" class="text-success">зарегистрироваться!</a> </p>
                    {%elif article.id_user==active_user.id%}
                   
-                   {%elif check%}
-                   <p class="text-danger">Эта жилплощадь уже занята!</p>
-                   <a href="/chat/{{article.id}}/{{article.users.id}}" class="btn btn-success btn-lg">Задачать вопрос владельцу</a>
+             
 
                    {%else%}
                    <a href="/chat/{{article.id}}/{{article.users.id}}" class="btn btn-success btn-lg">Задачать вопрос владельцу</a>

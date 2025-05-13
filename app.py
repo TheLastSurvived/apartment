@@ -48,6 +48,7 @@ class Articles(db.Model):
     price = db.Column(db.Integer)
     type_app = db.Column(db.String(100))
     address= db.Column(db.String(100))
+    count_rooms = db.Column(db.Integer)
     id_user = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     orders = db.relationship('Orders', backref='article', lazy=True)
@@ -69,7 +70,7 @@ class Orders(db.Model):
 class Messages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False)
@@ -235,7 +236,6 @@ def my_chats():
 
 @app.context_processor
 def inject_unread_messages():
-
     if 'name' in session:
         current_user = Users.query.filter_by(email=session['name']).first()
 
@@ -257,12 +257,13 @@ def profile():
         category = request.form.get('category')
         type_app = request.form.get('type')
         price = request.form.get('price')
+        count_rooms = request.form.get('count_rooms')
         image = request.files['image']
         filename = secure_filename(image.filename)
         pic_name = str(uuid.uuid4()) + "_" + filename
         image.save("static/img/upload/" + pic_name)
         text = request.form.get('ckeditor')
-        article = Articles(title=title,address=address,category=category,type_app=type_app,price=price,image_name=pic_name,text=text,id_user=total_user.id)
+        article = Articles(title=title,address=address,category=category,type_app=type_app,price=price,image_name=pic_name,text=text,id_user=total_user.id,count_rooms=count_rooms)
         db.session.add(article)
         db.session.commit()
         flash("Запись добавлена!", category="ok")
@@ -277,11 +278,12 @@ def catalog():
         min_price = request.args.get('min_price')
         max_price = request.args.get('max_price')
         type_app = request.args.get('type_app')
+        available_date_str = request.args.get('available_date')
+        available_date = datetime.strptime(available_date_str, "%Y-%m-%d") if available_date_str else None
+        count_rooms = request.args.get('room_type')
 
-        # Строим базовый запрос
         query = Articles.query
 
-        # Применяем фильтры, если они указаны
         if category:
             query = query.filter(Articles.category == category)
         if min_price:
@@ -290,8 +292,14 @@ def catalog():
             query = query.filter(Articles.price <= int(max_price))
         if type_app:
             query = query.filter(Articles.type_app == type_app)
-
-        # Выполняем запрос и получаем отфильтрованные статьи
+        if available_date:
+            query = query.filter(~Articles.orders.any(Orders.date == available_date))
+        if count_rooms:
+            if int(count_rooms) >= 4:
+                query = query.filter(Articles.count_rooms >= int(count_rooms))
+            else:
+                query = query.filter(Articles.count_rooms == int(count_rooms))
+            
         filtered_articles = query.all()
         return render_template("catalog.html",articles=filtered_articles)
 
@@ -308,6 +316,7 @@ def card(id):
         article.type_app = request.form.get('type')
         article.price = request.form.get('price')
         article.text = request.form.get('ckeditor')
+        article.count_rooms = request.form.get('count_rooms')
         image = request.files['image']
         if image:
             filename = secure_filename(image.filename)
@@ -382,12 +391,23 @@ def delete_order(id):
 @app.route('/add-order/<int:id_user>/<int:id_article>', methods=[ 'POST'])
 def add_order(id_user,id_article):
     if request.method == 'POST':
-        date = request.form.get('date')
-        date = datetime.strptime(date, '%Y-%m-%d')
-        order = Orders(date=date,id_user=id_user,id_article=id_article)
-        db.session.add(order)
-        db.session.commit()
-    flash("Заказ оформлен!", category="ok")
+        date_str = request.form.get('date')
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            current_date = datetime.now().date()
+            
+            if selected_date < current_date:
+                flash("Нельзя забронировать на прошедшую дату!", category="bad")
+            elif Orders.query.filter_by(date=selected_date, id_article=id_article).first():
+                flash("Эта дата уже занята!", category="bad")
+            else:
+                order = Orders(date=selected_date, id_user=id_user, id_article=id_article)
+                db.session.add(order)
+                db.session.commit()
+                flash("Заказ оформлен!", category="ok")
+        except ValueError:
+            flash("Некорректный формат даты!", category="bad")
+            
     return redirect(url_for("card", id=id_article))
 
 
