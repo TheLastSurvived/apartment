@@ -149,3 +149,8 @@ footer {
   background: #198754;
   border-color: #198754;
 }
+
+
+.leaflet-right a{
+  display: none;
+}

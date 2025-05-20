@@ -11,6 +11,7 @@ from flask_admin.contrib.sqlamodel import ModelView
 from flask_admin import Admin
 from flask_migrate import Migrate
 from sqlalchemy import or_,case,and_  
+import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -52,6 +53,8 @@ class Articles(db.Model):
     id_user = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     orders = db.relationship('Orders', backref='article', lazy=True)
+    images = db.relationship('Image', backref='article', lazy=True, cascade="all, delete-orphan")
+
    
     def __repr__(self):
         return 'Articles %r' % self.id 
@@ -82,6 +85,17 @@ class Messages(db.Model):
       
     def __repr__(self):
         return f'<Message {self.id}>'
+    
+
+class Image(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'))
+    image_name = db.Column(db.String(255))
+
+
+    def __repr__(self):
+        return f'<Image {self.id}>'
+    
 
 class AdminIndex(AdminIndexView):
     @expose('/', methods=['GET', 'POST'])
@@ -117,10 +131,17 @@ class MessagesView(ModelView):
     column_list = ['id', 'content','timestamp', 'sender_id','recipient_id','article_id','is_read']
 
 
+class ImageView(ModelView):
+    column_display_pk = True 
+    column_hide_backrefs = False
+    column_list = ['id', 'article_id','image_name']
+
+
 admin.add_view(ModelView(Users, db.session))
 admin.add_view(ArticlesView(Articles, db.session))
 admin.add_view(OrdersView(Orders, db.session))
 admin.add_view(MessagesView(Messages, db.session))
+admin.add_view(ImageView(Image, db.session))
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -234,6 +255,75 @@ def my_chats():
     return render_template('my_chats.html', chats=chats)
 
 
+@app.route('/update-article-galery/<int:id>', methods=['POST'])
+def update_article(id):
+    if 'images' in request.files:
+        files = request.files.getlist('images')
+        
+        # Проверяем количество файлов
+        if len(files) > 5:
+            flash("Максимум 5 изображения!", "bad")
+            return redirect(url_for('card', id=id))
+        
+        # Проверяем общее количество изображений у статьи
+        existing_images = Image.query.filter_by(article_id=id).count()
+        if existing_images + len(files) > 5:
+            flash(f"В записе уже {existing_images} изображений. В данный момент дожно добавить только {5 - existing_images}.", "bad")
+            return redirect(url_for('card', id=id))
+
+        # Сохраняем файлы
+        for file in files:
+            if file.filename != '':
+                if not allowed_file(file.filename):
+                    flash("Недопустимый формат файла!", "bad")
+                    continue
+                
+                filename = secure_filename(file.filename)
+                unique_filename = str(uuid.uuid4()) + "_" + filename
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                file.save(file_path)
+                
+                new_image = Image(article_id=id, image_name=unique_filename)
+                db.session.add(new_image)
+        
+        db.session.commit()
+        flash("Изображения успешно загружены!", "ok")
+    
+    return redirect(url_for('card', id=id))
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/delete-image/<int:image_id>')
+def delete_image(image_id):
+    image = Image.query.get_or_404(image_id)
+    current_user = Users.query.filter_by(email=session['name']).first()
+    
+    # Проверяем, что пользователь имеет права на удаление
+    if image.article.id_user != current_user.id and current_user.root != 1:
+        abort(403)
+    
+    try:
+        # Удаляем файл с диска
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.image_name)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Удаляем запись из БД
+        db.session.delete(image)
+        db.session.commit()
+        flash("Изображение удалено!", "ok")
+    except Exception as e:
+        db.session.rollback()
+        flash("Ошибка при удалении изображения!", "bad")
+        app.logger.error(f"Error deleting image: {str(e)}")
+    
+    return redirect(url_for('card', id=image.article_id))
+
+
 @app.context_processor
 def inject_unread_messages():
     if 'name' in session:
@@ -307,8 +397,10 @@ def catalog():
 @app.route('/card/<int:id>', methods=['GET', 'POST'])
 def card(id):
     article = Articles.query.get(id)
+    if not article:
+        abort(404)
     check = Orders.query.filter_by(id_article=article.id).all()
-
+    images = Image.query.filter_by(article_id=id).all()
     if request.method == 'POST':
         article.title = request.form.get('title')
         article.category = request.form.get('category')
@@ -326,7 +418,7 @@ def card(id):
         db.session.commit()
         flash("Запись обновлена!", category="ok")
         return redirect(url_for("card", id=article.id))
-    return render_template("card.html",article=article,check=check)
+    return render_template("card.html",article=article,check=check,images=images)
 
 
 @app.route('/about')
