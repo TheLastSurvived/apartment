@@ -99,6 +99,10 @@
                   
                     <div class="gallery-main">
                         <img id="mainImage" src="../../static/img/upload/{{article.image_name}}" width="100%" alt="Основное изображение товара">
+                        <div class="image-navigation my-2 d-flex justify-content-between">
+                            <button class="btn btn-outline-success prev-btn" onclick="prevImage()">←</button>
+                            <button class="btn btn-outline-success next-btn" onclick="nextImage()">→</button>
+                        </div>
                         <div class="row gallery-thumbnails my-3">
                           <h3>Галерея</h3>
                           <div class="col-md-4 mb-3">
@@ -324,5 +328,39 @@
                 errorElement.textContent = "Ошибка загрузки карты. Попробуйте позже.";
             });
     </script>
+
+
+<script>
+    // Получаем все изображения галереи
+    const galleryImages = [
+        "../../static/img/upload/{{article.image_name}}",
+        {% for image in article.images %}
+        "../../static/img/upload/{{image.image_name}}",
+        {% endfor %}
+    ].filter(Boolean); // Удаляем пустые элементы, если images нет
+    
+    let currentImageIndex = 0;
+    
+    function changeImage(src) {
+        document.getElementById('mainImage').src = src;
+        // Обновляем текущий индекс
+        currentImageIndex = galleryImages.indexOf(src);
+    }
+    
+    function prevImage() {
+        if (galleryImages.length === 0) return;
+        
+        currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+        document.getElementById('mainImage').src = galleryImages[currentImageIndex];
+    }
+    
+    function nextImage() {
+        if (galleryImages.length === 0) return;
+        
+        currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+        document.getElementById('mainImage').src = galleryImages[currentImageIndex];
+    }
+</script>
+
 
     {% endblock %}
