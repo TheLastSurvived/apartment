@@ -35,7 +35,7 @@
                       </div>
                       <div class="mb-3">
                         <label for="disabledTextInput" class="form-label">Количество комнат</label>
-                        <input type="number" value="{{article.count_rooms}}" id="disabledTextInput" class="form-control" name="count_rooms" placeholder="Количество комнат"
+                        <input type="number" min="1" value="{{article.count_rooms}}" id="disabledTextInput" class="form-control" name="count_rooms" placeholder="Количество комнат"
                           required>
                       </div>
                       <div class="mb-3">
@@ -46,7 +46,25 @@
           
                       <div class="mb-3">
                         <label for="disabledTextInput" class="form-label">Цена, руб.</label>
-                        <input type="number" value="{{article.price}}" id="disabledTextInput" class="form-control" name="price" placeholder="Цена, руб."
+                        <input type="number" min="1" value="{{article.price}}" id="disabledTextInput" class="form-control" name="price" placeholder="Цена, руб."
+                          required>
+                      </div>
+
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Этаж</label>
+                        <input type="number" min="1" value="{{article.floor}}" id="disabledTextInput" class="form-control" name="floor" placeholder="Этаж"
+                          >
+                      </div>
+
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Подъезд</label>
+                        <input type="number" min="1" value="{{article.entrance}}" id="disabledTextInput" class="form-control" name="entrance" placeholder="Подъезд"
+                          >
+                      </div>
+
+                      <div class="mb-3">
+                        <label for="disabledTextInput" class="form-label">Цена, руб.</label>
+                        <input type="number" min="1" value="{{article.price}}" id="disabledTextInput" class="form-control" name="price" placeholder="Цена, руб."
                           required>
                       </div>
 
@@ -170,6 +188,12 @@
                     <h1>{{article.title}}</h1>
                     <p class="text-muted">Категория: {{article.category}}</p>
                     <p class="text-muted">Адрес: {{article.address}}</p>
+                    {%if article.floor%}
+                    <p class="text-muted">Этаж: {{article.floor}}</p>
+                    {%endif%}
+                    {%if article.entrance%}
+                    <p class="text-muted">Подъезд: {{article.entrance}}</p>
+                    {%endif%}
                     <p class="lead">Тип аренды: <strong>{{article.type_app}}</strong></p>
                     <p class="lead">Цена: <strong>{{article.price}} руб.</strong></p>
                    

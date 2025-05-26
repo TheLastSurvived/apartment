@@ -96,7 +96,7 @@
                             </div>
                             <div class="mb-3">
                                 <label for="count_rooms" class="form-label">Количество комнат</label>
-                                <input type="number" name="count_rooms" class="form-control" placeholder="Количество комнат" id="count_rooms" required>
+                                <input type="number" name="count_rooms" min="1" class="form-control" placeholder="Количество комнат" id="count_rooms" required>
                             </div>
                             <div class="mb-3">
                                 <label for="address" class="form-label">Адрес (пример ул. Курчатова, 4, Гродно)</label>
@@ -105,8 +105,21 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
+                                    <label for="floor" class="form-label">Этаж</label>
+                                    <input type="number" class="form-control" min="1" name="floor" placeholder="Этаж" id="price" >
+                                </div>
+                                <div class="col-md-6 mb-3">
+                
+                                    <label for="entrance" class="form-label">Подъезд</label>
+                                    <input type="number" class="form-control" min="1" name="entrance" placeholder="Подъезд" id="entrance" >
+
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
                                     <label for="price" class="form-label">Цена, руб.</label>
-                                    <input type="number" class="form-control" name="price" placeholder="Цена" id="price" required>
+                                    <input type="number" class="form-control" min="1" name="price" placeholder="Цена" id="price" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="category" class="form-label">Категория</label>

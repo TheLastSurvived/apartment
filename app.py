@@ -47,9 +47,12 @@ class Articles(db.Model):
     image_name = db.Column(db.String(100))
     category = db.Column(db.String(100))
     price = db.Column(db.Integer)
+    floor = db.Column(db.Integer)
+    entrance = db.Column(db.Integer)
     type_app = db.Column(db.String(100))
     address= db.Column(db.String(100))
     count_rooms = db.Column(db.Integer)
+    hide = db.Column(db.Boolean, default=True)
     id_user = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     orders = db.relationship('Orders', backref='article', lazy=True)
@@ -122,7 +125,7 @@ class OrdersView(ModelView):
 class ArticlesView(ModelView):
     column_display_pk = True 
     column_hide_backrefs = False
-    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address','id_user']
+    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','id_user']
 
 
 class MessagesView(ModelView):
@@ -348,12 +351,14 @@ def profile():
         type_app = request.form.get('type')
         price = request.form.get('price')
         count_rooms = request.form.get('count_rooms')
+        floor = request.form.get('floor')
+        entrance = request.form.get('entrance')
         image = request.files['image']
         filename = secure_filename(image.filename)
         pic_name = str(uuid.uuid4()) + "_" + filename
         image.save("static/img/upload/" + pic_name)
         text = request.form.get('ckeditor')
-        article = Articles(title=title,address=address,category=category,type_app=type_app,price=price,image_name=pic_name,text=text,id_user=total_user.id,count_rooms=count_rooms)
+        article = Articles(entrance=entrance,floor=floor,title=title,address=address,category=category,type_app=type_app,price=price,image_name=pic_name,text=text,id_user=total_user.id,count_rooms=count_rooms)
         db.session.add(article)
         db.session.commit()
         flash("Запись добавлена!", category="ok")
@@ -368,12 +373,18 @@ def catalog():
         min_price = request.args.get('min_price')
         max_price = request.args.get('max_price')
         type_app = request.args.get('type_app')
+        address_filter = request.args.get('address')
         available_date_str = request.args.get('available_date')
         available_date = datetime.strptime(available_date_str, "%Y-%m-%d") if available_date_str else None
         count_rooms = request.args.get('room_type')
-
+        min_price_all = db.session.query(func.min(Articles.price)).scalar()
+        max_price_all = db.session.query(func.max(Articles.price)).scalar()
         query = Articles.query
+        addresses = db.session.query(Articles.address).distinct().all()
+        addresses = [a[0] for a in addresses if a[0]] 
 
+        if address_filter:
+            query = query.filter(Articles.address == address_filter)
         if category:
             query = query.filter(Articles.category == category)
         if min_price:
@@ -391,13 +402,13 @@ def catalog():
                 query = query.filter(Articles.count_rooms == int(count_rooms))
             
         filtered_articles = query.all()
-        return render_template("catalog.html",articles=filtered_articles)
+        return render_template("catalog.html",addresses=addresses, datetime = datetime, timedelta=timedelta, articles=filtered_articles,min_price_all=min_price_all,max_price_all=max_price_all)
 
 
 @app.route('/card/<int:id>', methods=['GET', 'POST'])
 def card(id):
     article = Articles.query.get(id)
-    if not article:
+    if not article or article.hide:
         abort(404)
     check = Orders.query.filter_by(id_article=article.id).all()
     images = Image.query.filter_by(article_id=id).all()
@@ -408,6 +419,8 @@ def card(id):
         article.type_app = request.form.get('type')
         article.price = request.form.get('price')
         article.text = request.form.get('ckeditor')
+        article.floor = request.form.get('floor')
+        article.entrance = request.form.get('entrance')
         article.count_rooms = request.form.get('count_rooms')
         image = request.files['image']
         if image:

@@ -20,6 +20,7 @@
           <div class="row g-3">
             {%if articles%}
             {%for article in articles%}
+            {%if not article.hide%}
             <div class="col-md-6">
               <a href="/card/{{article.id}}" class="card-link">
                 <div class="card">
@@ -36,6 +37,7 @@
                 </div>
               </a>
             </div>
+            {%endif%}
             {%endfor%}
             
             {%else%}
@@ -72,14 +74,33 @@
             </select>
         
             <label for="min_price" class="form-label mt-2">Минимальная цена:</label>
-            <input type="number" class="form-control" name="min_price" id="min_price" value="{{ request.args.get('min_price', '') }}">
+            <input type="number" min="1" class="form-control" name="min_price" id="min_price" placeholder="{{min_price_all}}" value="{{ request.args.get('min_price', '') }}">
         
             <label for="max_price" class="form-label mt-2">Максимальная цена:</label>
-            <input type="number" class="form-control" name="max_price" id="max_price" value="{{ request.args.get('max_price', '') }}">
+            <input type="number" min="1" class="form-control" name="max_price" id="max_price" placeholder="{{max_price_all}}" value="{{ request.args.get('max_price', '') }}">
+
+            <p class="mt-3">
+              Общий диапазон цен: 
+              <span class="fw-bold">{{ min_price_all }}</span> - 
+              <span class="fw-bold">{{ max_price_all }}</span>
+            </p>
 
             <label for="available_date" class="form-label mt-2">Доступно с:</label>
-            <input type="date" class="form-control" name="available_date" id="available_date" value="{{ request.args.get('available_date', '') }}">
+            <input type="date" class="form-control" name="available_date" id="available_date" 
+            value="{{ request.args.get('available_date', datetime.now().strftime('%Y-%m-%d')) }}"
+            min="{{ datetime.now().strftime('%Y-%m-%d') }}"
+            max="{{ (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d') }}"> 
             
+            
+            <label for="address" class="form-label mt-3">Регион (адрес):</label>
+            <input list="addresses" name="address" id="address" class="form-control" 
+                   value="{{ request.args.get('address', '') }}" placeholder="Начните вводить...">
+            <datalist id="addresses">
+                {% for address in addresses %}
+                    <option value="{{ address }}">
+                {% endfor %}
+            </datalist>
+
             <div class="d-flex justify-content-between mt-3">
                 <button type="submit" class="btn btn-success">Применить</button>
                 <a href="/catalog" class="btn btn-outline-secondary">Сбросить фильтры</a>
