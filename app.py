@@ -135,7 +135,7 @@ class OrdersView(ModelView):
 class ArticlesView(ModelView):
     column_display_pk = True 
     column_hide_backrefs = False
-    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','id_user']
+    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','hide','id_user']
 
 
 class MessagesView(ModelView):
