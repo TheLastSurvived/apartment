@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, session, url_for, abort, jsonify
+from flask import Flask, render_template, request, flash, redirect, session, url_for, abort, jsonify, json
 from flask_sqlalchemy import SQLAlchemy
 from flask_ckeditor import CKEditor
 from datetime import datetime, timedelta
@@ -98,7 +98,17 @@ class Image(db.Model):
 
     def __repr__(self):
         return f'<Image {self.id}>'
+  
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'))
     
+    user = db.relationship('Users', backref='notifications')
+    article = db.relationship('Articles')  
 
 class AdminIndex(AdminIndexView):
     @expose('/', methods=['GET', 'POST'])
@@ -145,7 +155,7 @@ admin.add_view(ArticlesView(Articles, db.session))
 admin.add_view(OrdersView(Orders, db.session))
 admin.add_view(MessagesView(Messages, db.session))
 admin.add_view(ImageView(Image, db.session))
-
+admin.add_view(ModelView(Notification, db.session))
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -344,6 +354,8 @@ def profile():
     total_user = Users.query.filter_by(email=session['name']).first()
     articles = Articles.query.filter_by(id_user=total_user.id).all()
     orders = Orders.query.filter_by(id_user=total_user.id).join(Articles).all()
+    notifications = Notification.query.filter_by(user_id=total_user.id)\
+        .order_by(Notification.created_at.desc()).all()
     if request.method == 'POST':
         title = request.form.get('name')
         address = request.form.get('address')
@@ -363,7 +375,36 @@ def profile():
         db.session.commit()
         flash("Запись добавлена!", category="ok")
         return redirect(url_for("profile"))
-    return render_template("profile.html",articles=articles,orders=orders)
+    return render_template("profile.html",articles=articles,orders=orders,notifications=notifications)
+
+
+@app.route('/mark-notification-as-read/<int:notification_id>')
+def mark_notification_as_read(notification_id):
+    if not 'name' in session:
+        abort(401)
+    
+    notification = Notification.query.get_or_404(notification_id)
+    user = Users.query.filter_by(email=session['name']).first()
+    
+    if notification.user_id != user.id:
+        abort(403)
+    
+    notification.is_read = True
+    db.session.commit()
+    
+    return redirect(url_for('card', id=notification.article_id))
+
+
+@app.route('/mark-all-notifications-as-read', methods=['GET'])
+def mark_all_as_read():
+    if not 'name' in session:
+        abort(401)
+    
+    user = Users.query.filter_by(email=session['name']).first()
+    Notification.query.filter_by(user_id=user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    
+    return redirect(url_for('profile'))
 
 
 @app.route('/catalog')
@@ -493,27 +534,61 @@ def delete_order(id):
     return redirect('/profile')
 
 
-@app.route('/add-order/<int:id_user>/<int:id_article>', methods=[ 'POST'])
-def add_order(id_user,id_article):
+@app.route('/add-order/<int:id_user>/<int:id_article>', methods=['POST'])
+def add_order(id_user, id_article):
     if request.method == 'POST':
-        date_str = request.form.get('date')
+        article = Articles.query.get_or_404(id_article)
+        selected_dates_json = request.form.get('selected_dates', '[]')
+        
         try:
-            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            selected_dates = json.loads(selected_dates_json)
             current_date = datetime.now().date()
-            selected_datetime = datetime.combine(selected_date, datetime.min.time())
-            existing_order = Orders.query.filter_by(date=selected_datetime, id_article=id_article).first()
-            print(existing_order)
-            if selected_date < current_date:
-                flash("Нельзя забронировать на прошедшую дату!", category="bad")
-            elif existing_order:
-                flash("Эта дата уже занята!", category="bad")
-            else:
-                order = Orders(date=selected_date, id_user=id_user, id_article=id_article)
+            
+            if not selected_dates:
+                flash("Не выбрано ни одной даты!", category="bad")
+                return redirect(url_for("card", id=id_article))
+            
+            for date_str in selected_dates:
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                
+                if date < current_date:
+                    flash(f"Дата {date_str} уже прошла!", category="bad")
+                    continue
+                
+                # Проверка на существующее бронирование
+                existing_order = Orders.query.filter_by(
+                    id_article=id_article,
+                    date=date
+                ).first()
+                
+                if existing_order:
+                    flash(f"Дата {date_str} уже занята!", category="bad")
+                    continue
+                
+                # Создаем бронирование
+                order = Orders(
+                    date=date,
+                    id_user=id_user,
+                    id_article=id_article
+                )
                 db.session.add(order)
-                db.session.commit()
-                flash("Заказ оформлен!", category="ok")
+                
+                # Создаем уведомление для владельца
+                notification = Notification(
+                    user_id=article.id_user,
+                    message=f"Ваше жилье '{article.title}' забронировано на {date_str}",
+                    article_id=article.id,
+                    is_read=False
+                )
+                db.session.add(notification)
+            
+            db.session.commit()
+            flash("Бронирование оформлено!", category="ok")
+            
         except ValueError:
             flash("Некорректный формат даты!", category="bad")
+        except json.JSONDecodeError:
+            flash("Ошибка обработки выбранных дат!", category="bad")
             
     return redirect(url_for("card", id=id_article))
 
@@ -533,7 +608,7 @@ def get_available_dates(article_id):
     
     if article.type_app == "Посуточная":
         # Для посуточной - все даты на 3 месяца вперед, кроме забронированных
-        for i in range(90):
+        for i in range(90):  # 3 месяца
             date = today + timedelta(days=i)
             if date not in booked_dates:
                 available_dates.append(date.strftime('%Y-%m-%d'))
@@ -583,6 +658,33 @@ def inject_user():
         if 'name' in session:
             return Users.query.filter_by(email=session['name']).first()
     return dict(active_user=get_user_name())
+
+
+@app.route('/clear-notifications', methods=['GET'])
+def clear_notifications():
+    if not 'name' in session:
+        abort(401)
+    
+    user = Users.query.filter_by(email=session['name']).first()
+    # Удаляем все уведомления пользователя
+    Notification.query.filter_by(user_id=user.id).delete()
+    db.session.commit()
+    
+    flash("Все уведомления удалены", "ok")
+    return redirect(url_for('profile'))
+
+
+@app.context_processor
+def inject_unread_count():
+    if 'name' in session:
+        user = Users.query.filter_by(email=session['name']).first()
+        if user:
+            unread_count = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+            return dict(unread_notifications=unread_count)
+    return dict(unread_notifications=0)
+
+
+
 
 
 @app.route('/edit_profile', methods=['POST'])

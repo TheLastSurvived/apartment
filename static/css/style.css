@@ -154,3 +154,8 @@ footer {
 .leaflet-right a{
   display: none;
 }
+
+.notification-container {
+  max-height: 300px; /* Set the desired maximum height */
+  overflow-y: auto; /* Enable vertical scrolling */
+}

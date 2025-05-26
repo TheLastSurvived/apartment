@@ -211,38 +211,39 @@
                     data-bs-target="#exampleModal2">Забронировать</button>
 
                     <div class="modal fade" id="exampleModal2" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Выберите дату</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="post" enctype="multipart/form-data" action="{{url_for('add_order', id_user=active_user.id, id_article=article.id)}}">
-                    <div class="mb-3">
-                        <label for="bookingDate" class="form-label">Доступные даты:</label>
-                        <input type="text" class="form-control" id="datepicker" placeholder="Выберите дату" readonly>
-                        <input type="hidden" name="date" id="selectedDate" required>
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                {% if article.type_app == 'Посуточная' %}
-                                    Доступны любые даты, кроме забронированных
-                                {% else %}
-                                    Доступны только первые числа месяцев
-                                {% endif %}
-                            </small>
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="exampleModalLabel">Выберите даты</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="post" enctype="multipart/form-data" id="bookingForm" 
+                                          action="{{url_for('add_order', id_user=active_user.id, id_article=article.id)}}">
+                                        <div class="mb-3">
+                                            <label for="datepicker" class="form-label">Доступные даты:</label>
+                                            <input type="text" class="form-control" id="datepicker" placeholder="Выберите даты" readonly>
+                                            <input type="hidden" name="selected_dates" id="selectedDates">
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    {% if article.type_app == 'Посуточная' %}
+                                                        Выберите нужные даты (можно несколько)
+                                                    {% else %}
+                                                        Доступны только первые числа месяцев
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <div id="selectedDatesList" class="mt-2"></div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                            <button type="submit" class="btn btn-success">Забронировать</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                        <button type="submit" class="btn btn-success">Забронировать</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-   
-</div>
  {%endif%}
             </div>
         </div>
@@ -260,57 +261,92 @@
         </div>
     </main>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('exampleModal2');
-
-    modal.addEventListener('shown.bs.modal', function() {
-        fetch('/get_available_dates/{{article.id}}')
-            .then(response => response.json())
-            .then(availableDates => {
-                const typeApp = '{{article.type_app}}';
-                const config = {
-                    locale: 'ru',
-                    minDate: 'today',
-                    dateFormat: 'Y-m-d',
-                    disableMobile: true,
-                    enable: availableDates, // Поддержка доступных дат
-                    onChange(selectedDates, dateStr) {
-                        document.getElementById('selectedDate').value = dateStr;
-                    }
-                };
-
-                // Дополнительное ограничение для ежемесячной аренды
-                if (typeApp !== 'Посуточная') {
-                    const originalOnChange = config.onChange; // Сохраняем оригинальную функцию
-
-                    config.onChange = function(selectedDates, dateStr, instance) {
-                        originalOnChange(selectedDates, dateStr, instance); // Вызываем оригинальный onChange
-                        if (selectedDates[0] && selectedDates[0].getDate() !== 1) {
-                            instance.clear();
-                            alert('Для ежемесячной аренды доступны только первые числа месяцев');
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('exampleModal2');
+        const typeApp = '{{article.type_app}}';
+    
+        modal.addEventListener('shown.bs.modal', function() {
+            fetch('/get_available_dates/{{article.id}}')
+                .then(response => response.json())
+                .then(availableDates => {
+                    const config = {
+                        locale: 'ru',
+                        minDate: 'today',
+                        mode: 'multiple', // Режим выбора нескольких дат
+                        dateFormat: 'Y-m-d',
+                        disableMobile: true,
+                        enable: availableDates,
+                        onChange: function(selectedDates, dateStr) {
+                            if (!selectedDates || selectedDates.length === 0) {
+                                document.getElementById('selectedDates').value = '';
+                                document.getElementById('selectedDatesList').innerHTML = '';
+                                return;
+                            }
+                        
+                            // Правильное преобразование дат без учета часового пояса
+                            const dateStrings = selectedDates.map(d => {
+                                const year = d.getFullYear();
+                                const month = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            });
+                        
+                            document.getElementById('selectedDates').value = JSON.stringify(dateStrings);
+                            
+                            // Отображение выбранных дат
+                            const datesList = document.getElementById('selectedDatesList');
+                            datesList.innerHTML = '<p>Выбрано дат: ' + selectedDates.length + '</p><ul>';
+                            
+                            selectedDates.forEach(date => {
+                                datesList.innerHTML += '<li>' + date.toLocaleDateString('ru-RU') + '</li>';
+                            });
+                            
+                            datesList.innerHTML += '</ul>';
                         }
                     };
-                }
-
-                flatpickr('#datepicker', config);
-            })
-            .catch(error => {
-                console.error('Ошибка загрузки доступных дат:', error);
-            });
-    });
-
-    // Очищаем календарь при закрытии модального окна
-    modal.addEventListener('hidden.bs.modal', function() {
-        const fp = document.querySelector('#datepicker')._flatpickr;
-        if (fp) {
-            fp.clear();
-            fp.destroy();
-        }
-        document.getElementById('selectedDate').value = '';
-    });
-});
-
-</script>
+    
+                    // Для ежемесячной аренды оставляем только одну дату
+                    if (typeApp !== 'Посуточная') {
+                        config.mode = 'single';
+                        const originalOnChange = config.onChange;
+                        
+                        config.onChange = function(selectedDates, dateStr, instance) {
+                            if (selectedDates[0] && selectedDates[0].getDate() !== 1) {
+                                instance.clear();
+                                alert('Для ежемесячной аренды доступны только первые числа месяцев');
+                                return;
+                            }
+                            originalOnChange(selectedDates, dateStr, instance);
+                        };
+                    }
+    
+                    flatpickr('#datepicker', config);
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки доступных дат:', error);
+                });
+        });
+    
+        // Очищаем при закрытии
+        modal.addEventListener('hidden.bs.modal', function() {
+            const fp = document.querySelector('#datepicker')._flatpickr;
+            if (fp) {
+                fp.clear();
+                fp.destroy();
+            }
+            document.getElementById('selectedDates').value = '';
+            document.getElementById('selectedDatesList').innerHTML = '';
+        });
+    
+        // Обработка формы перед отправкой
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            const selectedDates = JSON.parse(document.getElementById('selectedDates').value || '[]');
+            if (selectedDates.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите хотя бы одну дату');
+            }
+        });
+    });</script>
 
 
 
