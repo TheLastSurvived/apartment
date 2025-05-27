@@ -425,7 +425,9 @@ def catalog():
         addresses = [a[0] for a in addresses if a[0]] 
 
         if address_filter:
-            query = query.filter(Articles.address == address_filter)
+           query = query.filter(func.lower(Articles.address).ilike(func.lower(f"%{address_filter}%")))
+
+           print(query)
         if category:
             query = query.filter(Articles.category == category)
         if min_price:
