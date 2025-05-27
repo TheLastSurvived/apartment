@@ -20,10 +20,13 @@
           <div class="row g-3">
             {%if articles%}
             {%for article in articles%}
-            {%if not article.hide%}
+            {%if not article.hide or active_user.root == 1%}
             <div class="col-md-6">
               <a href="/card/{{article.id}}" class="card-link">
-                <div class="card">
+                <div class="card position-relative">
+                  {% if article.hide %}
+                  <div class="moderation-label">На модерации</div>
+                  {% endif %}
                   <img
                     src="./static/img/upload/{{article.image_name}}"
                     class="card-img-top"

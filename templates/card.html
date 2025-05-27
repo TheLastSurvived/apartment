@@ -18,7 +18,11 @@
               Изменить
             </button>
             <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
-        
+            {%if article.hide%}
+            <a href="/change-status/{{article.id}}" class="btn btn-success mb-3">Опубликовать</a>
+            {%else%}
+             <a href="/change-status/{{article.id}}" class="btn btn-danger mb-3">Скрыть</a>
+            {%endif%}
             <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">

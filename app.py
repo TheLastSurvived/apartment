@@ -12,6 +12,8 @@ from flask_admin import Admin
 from flask_migrate import Migrate
 from sqlalchemy import or_,case,and_  
 import os
+from markupsafe import Markup
+from flask_admin.form import ImageUploadField
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -137,6 +139,24 @@ class ArticlesView(ModelView):
     column_hide_backrefs = False
     column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','hide','id_user']
 
+    form_widget_args = {
+        'image_name': {
+            'readonly': True
+        }
+    }
+
+    form_extra_fields = {
+        'image_preview': ImageUploadField('Image', base_path='static/img/upload')
+    }
+    
+    def _image_preview_formatter(view, context, model, name):
+        return Markup(f'<img src="../../static/img/upload/{model.image_name}" width="200">')
+
+    column_formatters = {
+        'image_name': _image_preview_formatter
+    }
+
+    
 
 class MessagesView(ModelView):
     column_display_pk = True 
@@ -426,8 +446,6 @@ def catalog():
 
         if address_filter:
            query = query.filter(func.lower(Articles.address).ilike(func.lower(f"%{address_filter}%")))
-
-           print(query)
         if category:
             query = query.filter(Articles.category == category)
         if min_price:
@@ -451,7 +469,12 @@ def catalog():
 @app.route('/card/<int:id>', methods=['GET', 'POST'])
 def card(id):
     article = Articles.query.get(id)
-    if not article or article.hide:
+    total_user = None
+    if 'name' in session:
+        total_user = Users.query.filter_by(email=session['name']).first()
+
+# Корректное условие с учетом приоритета операций
+    if not article or (article.hide and (not total_user or total_user.root != 1)):
         abort(404)
     check = Orders.query.filter_by(id_article=article.id).all()
     images = Image.query.filter_by(article_id=id).all()
@@ -525,6 +548,15 @@ def delete_article(id):
     db.session.commit()
     flash("Запись удалена!", category="bad")
     return redirect('/catalog')
+
+
+@app.route('/change-status/<int:id>')
+def change_article(id):
+    obj = Articles.query.filter_by(id=id).first()
+    obj.hide = not obj.hide
+    db.session.commit()
+    flash("Статус изменен!", category="ok")
+    return redirect(url_for("card", id=id))
 
 
 @app.route('/delete-order/<int:id>')
