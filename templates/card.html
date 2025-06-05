@@ -7,8 +7,15 @@
 {{ ckeditor.load() }}
     <main>
         <div class="container my-5">
-       
-            {%if 'name' in session and active_user.id==article.id_user or active_user.root==1%}
+            {%if active_user.root==1%}
+                <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
+            {%if article.hide%}
+                <a href="/change-status/{{article.id}}" class="btn btn-success mb-3">Опубликовать</a>
+            {%else%}
+                <a href="/change-status/{{article.id}}" class="btn btn-danger mb-3">Скрыть</a>
+            {%endif%}
+                    {%endif%}
+            {%if 'name' in session and active_user.id==article.id_user %}
             <button
               type="button"
               class="btn btn-warning mb-3"
@@ -18,11 +25,7 @@
               Изменить
             </button>
             <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
-            {%if article.hide%}
-            <a href="/change-status/{{article.id}}" class="btn btn-success mb-3">Опубликовать</a>
-            {%else%}
-             <a href="/change-status/{{article.id}}" class="btn btn-danger mb-3">Скрыть</a>
-            {%endif%}
+           
             <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -190,6 +193,7 @@
                     {%endif%}
                   
                     <h1>{{article.title}}</h1>
+                    <p> <small>Добавлено  {{article.created_at.strftime('%d.%m.%Y %H:%M' )}}</small></p>
                     <p class="text-muted">Категория: {{article.category}}</p>
                     <p class="text-muted">Адрес: {{article.address}}</p>
                     {%if article.floor%}
@@ -200,6 +204,7 @@
                     {%endif%}
                     <p class="lead">Тип аренды: <strong>{{article.type_app}}</strong></p>
                     <p class="lead">Цена: <strong>{{article.price}} руб.</strong></p>
+                    
                    
               
                     {% autoescape false %} {{article.text}} {% endautoescape %}

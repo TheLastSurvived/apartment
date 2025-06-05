@@ -55,6 +55,7 @@ class Articles(db.Model):
     address= db.Column(db.String(100))
     count_rooms = db.Column(db.Integer)
     hide = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     id_user = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     orders = db.relationship('Orders', backref='article', lazy=True)
@@ -125,7 +126,7 @@ class AdminIndex(AdminIndexView):
             abort(401)
 
 
-admin = Admin(app, name='Аренда360',index_view=AdminIndex())
+admin = Admin(app, name='Аренда365')
 
 
 class OrdersView(ModelView):
@@ -137,7 +138,7 @@ class OrdersView(ModelView):
 class ArticlesView(ModelView):
     column_display_pk = True 
     column_hide_backrefs = False
-    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','hide','id_user']
+    column_list = ['id', 'title','text', 'image_name','category','price','type_app','address', 'entrance','floor','hide','id_user', 'created_at']
 
     form_widget_args = {
         'image_name': {
@@ -393,6 +394,14 @@ def profile():
         article = Articles(entrance=entrance,floor=floor,title=title,address=address,category=category,type_app=type_app,price=price,image_name=pic_name,text=text,id_user=total_user.id,count_rooms=count_rooms)
         db.session.add(article)
         db.session.commit()
+        notification = Notification(
+            user_id=total_user.id,
+            message=f"Ваше объявление '{article.title}' создано и ожидает модерации",
+            article_id=article.id,
+            is_read=False
+        )
+        db.session.add(notification)
+        db.session.commit()
         flash("Запись добавлена!", category="ok")
         return redirect(url_for("profile"))
     return render_template("profile.html",articles=articles,orders=orders,notifications=notifications)
@@ -434,18 +443,34 @@ def catalog():
         min_price = request.args.get('min_price')
         max_price = request.args.get('max_price')
         type_app = request.args.get('type_app')
-        address_filter = request.args.get('address')
+        region = request.args.get('region')
+        city = request.args.get('city')
         available_date_str = request.args.get('available_date')
         available_date = datetime.strptime(available_date_str, "%Y-%m-%d") if available_date_str else None
         count_rooms = request.args.get('room_type')
+        
         min_price_all = db.session.query(func.min(Articles.price)).scalar()
         max_price_all = db.session.query(func.max(Articles.price)).scalar()
         query = Articles.query
+        
+        # Получаем уникальные города для фильтрации в форме
         addresses = db.session.query(Articles.address).distinct().all()
-        addresses = [a[0] for a in addresses if a[0]] 
-
-        if address_filter:
-           query = query.filter(func.lower(Articles.address).ilike(func.lower(f"%{address_filter}%")))
+        addresses = [a[0] for a in addresses if a[0]]
+        
+        # Фильтрация по региону и городу
+        if region:
+            if city:
+                query = query.filter(Articles.address.ilike(f"%{city}%"))
+            else:
+                # Если город не выбран, фильтруем по всем городам области
+                if region == "Минск":
+                    query = query.filter(Articles.address.ilike("%Минск%"))
+                else:
+                    query = query.filter(or_(
+                        Articles.address.ilike(f"%{region}%"),
+                        Articles.address.ilike(f"%{region.split()[0]}%")  # Например, для "Брестская область" ищет "Брест"
+                    ))
+        
         if category:
             query = query.filter(Articles.category == category)
         if min_price:
@@ -463,7 +488,17 @@ def catalog():
                 query = query.filter(Articles.count_rooms == int(count_rooms))
             
         filtered_articles = query.all()
-        return render_template("catalog.html",addresses=addresses, datetime = datetime, timedelta=timedelta, articles=filtered_articles,min_price_all=min_price_all,max_price_all=max_price_all)
+        
+        return render_template("catalog.html",
+            addresses=addresses,
+            datetime=datetime,
+            timedelta=timedelta,
+            articles=filtered_articles,
+            min_price_all=min_price_all,
+            max_price_all=max_price_all,
+            selected_region=region,
+            selected_city=city
+        )
 
 
 @app.route('/card/<int:id>', methods=['GET', 'POST'])
@@ -552,9 +587,39 @@ def delete_article(id):
 
 @app.route('/change-status/<int:id>')
 def change_article(id):
-    obj = Articles.query.filter_by(id=id).first()
-    obj.hide = not obj.hide
+    if not 'name' in session:
+        abort(401)
+    
+    article = Articles.query.get_or_404(id)
+    current_user = Users.query.filter_by(email=session['name']).first()
+    
+    # Проверяем, что пользователь имеет права на изменение статуса
+    if article.id_user != current_user.id and current_user.root != 1:
+        abort(403)
+    
+    # Запоминаем предыдущее состояние
+    previous_status = article.hide
+    
+    # Меняем статус
+    article.hide = not article.hide
     db.session.commit()
+    
+    # Создаем уведомление, если статус изменился и это не админ
+    if current_user.root != 0:
+        if previous_status:
+            message = f"Ваше объявление '{article.title}' прошло модерацию и теперь видно всем пользователям"
+        else:
+            message = f"Ваше объявление '{article.title}' скрыто и больше не видно другим пользователям"
+        
+        notification = Notification(
+            user_id=article.id_user,
+            message=message,
+            article_id=article.id,
+            is_read=False
+        )
+        db.session.add(notification)
+        db.session.commit()
+    
     flash("Статус изменен!", category="ok")
     return redirect(url_for("card", id=id))
 
@@ -642,16 +707,23 @@ def get_available_dates(article_id):
     
     if article.type_app == "Посуточная":
         # Для посуточной - все даты на 3 месяца вперед, кроме забронированных
-        for i in range(90):  # 3 месяца
+        for i in range(365):  # 3 месяца
             date = today + timedelta(days=i)
             if date not in booked_dates:
                 available_dates.append(date.strftime('%Y-%m-%d'))
     else:
-        # Для ежемесячной - только первые числа месяцев
+       # Для ежемесячной - только первые числа месяцев
         current_month = today.month
         current_year = today.year
         
-        for i in range(3):  # 3 месяца вперед
+        # Если сегодня уже не первое число, начинаем со следующего месяца
+        if today.day > 1:
+            current_month += 1
+            if current_month > 12:
+                current_month = 1
+                current_year += 1
+        
+        for i in range(12):  # 3 месяца вперед
             month = current_month + i
             year = current_year
             if month > 12:
@@ -659,7 +731,7 @@ def get_available_dates(article_id):
                 year += 1
             
             date = datetime(year, month, 1).date()
-            if date >= today and date not in booked_dates:
+            if date not in booked_dates:
                 available_dates.append(date.strftime('%Y-%m-%d'))
     
     return jsonify(available_dates)

@@ -16,32 +16,44 @@
       {% endwith %}
 
       <div class="card my-3">
-        <div class="card-header">
-            <h5>Уведомления</h5>
-        </div>
-        <div class="card-body">
-            {% if notifications %}
-            <div class="notification-container">
-                <div class="list-group">
-                    {% for notification in notifications %}
-                    <a href="{{url_for('mark_notification_as_read', notification_id=notification.id)}}" 
-                       class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
-                        <div class="d-flex w-100 justify-content-between">
-                            <p class="mb-1">{{ notification.message }}</p>
-                            <small>{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
-                        </div>
-                    </a>
-                    {% endfor %}
-
-                </div>
-                </div>
-                <a href="{{url_for('mark_all_as_read')}}" class="btn btn-success my-3">Прочитать все</a>
-                <a href="{{url_for('clear_notifications')}}" class="btn btn-danger my-3" onsubmit="return confirm('Вы уверены, что хотите удалить все уведомления?')">Очистить</a>
-            {% else %}
-                <p class="text-muted">Нет новых уведомлений</p>
-            {% endif %}
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Уведомления</h5>
+        <div>
+            <a href="{{url_for('mark_all_as_read')}}" class="btn btn-sm btn-success me-2">
+                Прочитать все
+            </a>
+            <a href="{{url_for('clear_notifications')}}" class="btn btn-sm btn-danger" 
+               onclick="return confirm('Вы уверены, что хотите удалить все уведомления?')">
+                Очистить
+            </a>
         </div>
     </div>
+    <div class="card-body">
+        {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+            <a href="{{url_for('mark_notification_as_read', notification_id=notification.id)}}" 
+               class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                <div class="d-flex w-100 justify-content-between">
+                    <div>
+                        <h6 class="mb-1">{{ notification.message }}</h6>
+                        {% if notification.article %}
+                        <small class="text-muted">Объявление: {{ notification.article.title }}</small>
+                        {% endif %}
+                    </div>
+                    <small>{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+            <i class="bi bi-bell fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Нет новых уведомлений</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
         
         <div class="row mb-3">
             <!-- Левая колонка - профиль и аватар -->
@@ -205,7 +217,10 @@
                           <div class="card-body">
                               <h6 class="card-title">{{article.title|truncate(20)}}</h6>
                               <p class="text-muted small mb-1">{{article.address|truncate(25)}}</p>
-                              <p class="fw-bold small">Цена: {{article.price}} руб./{% if article.type_app == "Посуточная" %}сутки{% else %}месяц{% endif %}</p>
+                                 <div class="d-flex justify-content-between">
+                                    <p class="fw-bold small">Цена: {{article.price}} руб./{% if article.type_app == "Посуточная" %}сутки{% else %}месяц{% endif %}</p>
+                                     <p><small>{{article.created_at.strftime('%d.%m.%Y %H:%M' )}}</small></p>
+                                </div>
                           </div>
                           <div class="card-footer bg-transparent py-2">
                               <div class="d-flex justify-content-between">

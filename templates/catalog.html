@@ -35,7 +35,10 @@
                   <div class="card-body">
                     <h5 class="card-title">{{article.title}}</h5>
                     <p class="font-weight-bold">{{article.address}}</p>
-                    <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                    <div class="d-flex justify-content-between">
+                   <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                  <p><small>{{article.created_at.strftime('%d.%m.%Y %H:%M' )}}</small></p>
+                  </div>
                   </div>
                 </div>
               </a>
@@ -109,14 +112,30 @@
             max="{{ (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d') }}"> 
             
             
-            <label for="address" class="form-label mt-3">Регион (адрес):</label>
-            <input list="addresses" name="address" id="address" class="form-control" 
-                   value="{{ request.args.get('address', '') }}" placeholder="Начните вводить...">
-            <datalist id="addresses">
-                {% for address in addresses %}
-                    <option value="{{ address }}">
-                {% endfor %}
-            </datalist>
+            <div class="row mt-3">
+    <div class="col-md-6 mb-3">
+        <label for="region" class="form-label">Область:</label>
+        <select name="region" id="region" class="form-select" onchange="updateCities()">
+            <option value="">Вся Беларусь</option>
+            <option value="Брестская область">Брестская область</option>
+            <option value="Витебская область">Витебская область</option>
+            <option value="Гомельская область">Гомельская область</option>
+            <option value="Гродненская область">Гродненская область</option>
+            <option value="Минская область">Минская область</option>
+            <option value="Могилевская область">Могилевская область</option>
+            <option value="Минск">Минск (город)</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <label for="city" class="form-label">Город:</label>
+        <input list="cities" name="city" id="city" class="form-control" 
+               value="{{ request.args.get('city', '') }}" placeholder="Выберите город">
+        <datalist id="cities">
+            <!-- Города будут подгружаться динамически -->
+        </datalist>
+    </div>
+</div>
 
 
        
@@ -142,6 +161,54 @@
                 document.getElementById('room_type').value = '';
             }
         }
+
+
+        // Словарь с городами по областям
+const citiesByRegion = {
+    'Брестская область': ['Брест', 'Барановичи', 'Пинск', 'Кобрин', 'Берёза', 'Лунинец', 'Ивацевичи', 'Пружаны', 'Иваново', 'Дрогичин', 'Ганцевичи', 'Жабинка', 'Столин', 'Микашевичи', 'Белоозёрск', 'Малорита', 'Ляховичи', 'Каменец'],
+    'Витебская область': ['Витебск', 'Орша', 'Новополоцк', 'Полоцк', 'Поставы', 'Глубокое', 'Лепель', 'Новолукомль', 'Городок', 'Барань', 'Толочин', 'Браслав', 'Чашники', 'Миоры', 'Дубровно', 'Докшицы', 'Верхнедвинск', 'Сенно'],
+    'Гомельская область': ['Гомель', 'Мозырь', 'Жлобин', 'Светлогорск', 'Речица', 'Калинковичи', 'Рогачёв', 'Добруш', 'Житковичи', 'Хойники', 'Петриков', 'Ельск', 'Буда-Кошелёво', 'Наровля', 'Ветка', 'Чечерск', 'Октябрьский', 'Лельчицы'],
+    'Гродненская область': ['Гродно', 'Лида', 'Слоним', 'Волковыск', 'Сморгонь', 'Новогрудок', 'Ошмяны', 'Щучин', 'Мосты', 'Берёзовка', 'Ивье', 'Дятлово', 'Скидель', 'Островец', 'Кореличи', 'Вороново', 'Зельва', 'Свислочь'],
+    'Минская область': ['Минск', 'Борисов', 'Солигорск', 'Молодечно', 'Жодино', 'Слуцк', 'Вилейка', 'Дзержинск', 'Марьина Горка', 'Столбцы', 'Несвиж', 'Заславль', 'Фаниполь', 'Березино', 'Любань', 'Старые Дороги', 'Воложин', 'Узда', 'Копыль', 'Клецк', 'Червень', 'Смолевичи', 'Мядель'],
+    'Могилевская область': ['Могилёв', 'Бобруйск', 'Горки', 'Осиповичи', 'Кричев', 'Быхов', 'Климовичи', 'Шклов', 'Костюковичи', 'Чаусы', 'Мстиславль', 'Белыничи', 'Кировск', 'Чериков', 'Славгород', 'Круглое', 'Кличев', 'Дрибин'],
+    'Минск': ['Минск']
+};
+
+function updateCities() {
+    const regionSelect = document.getElementById('region');
+    const cityInput = document.getElementById('city');
+    const citiesDatalist = document.getElementById('cities');
+    
+    // Очищаем список городов
+    citiesDatalist.innerHTML = '';
+    cityInput.value = '';
+    
+    // Если выбрана область, загружаем соответствующие города
+    if (regionSelect.value && citiesByRegion[regionSelect.value]) {
+        citiesByRegion[regionSelect.value].forEach(city => {
+            const option = document.createElement('option');
+            option.value = city;
+            citiesDatalist.appendChild(option);
+        });
+    }
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Если в URL есть параметр region, устанавливаем его
+    const urlParams = new URLSearchParams(window.location.search);
+    const regionParam = urlParams.get('region');
+    if (regionParam) {
+        document.getElementById('region').value = regionParam;
+        updateCities();
+    }
+    
+    // Если в URL есть параметр city, устанавливаем его
+    const cityParam = urlParams.get('city');
+    if (cityParam) {
+        document.getElementById('city').value = cityParam;
+    }
+});
     </script>
   </main>
 {% endblock %}

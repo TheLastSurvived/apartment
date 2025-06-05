@@ -98,7 +98,11 @@
                 <div class="card-body">
                   <h5 class="card-title">{{article.title}}</h5>
                   <p class="font-weight-bold">{{article.address}}</p>
-                  <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                  <div class="d-flex justify-content-between">
+                   <p><small>Цена: {{article.price}} руб./{%if article.type_app=="Посуточная"%}сутки{%else%}месяц{%endif%}</small></p>
+                  <p><small>{{article.created_at.strftime('%d.%m.%Y %H:%M' )}}</small></p>
+                  </div>
+                
                 </div>
               </div>
             </a>
