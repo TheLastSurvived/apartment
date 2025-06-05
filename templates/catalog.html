@@ -129,16 +129,12 @@
     
     <div class="col-md-6 mb-3">
         <label for="city" class="form-label">Город:</label>
-        <input list="cities" name="city" id="city" class="form-control" 
-               value="{{ request.args.get('city', '') }}" placeholder="Выберите город">
-        <datalist id="cities">
+        <select name="city" id="city" class="form-select">
+            <option value="">Все города</option>
             <!-- Города будут подгружаться динамически -->
-        </datalist>
+        </select>
     </div>
 </div>
-
-
-       
 
             <div class="d-flex justify-content-between mt-3">
                 <button type="submit" class="btn btn-success">Применить</button>
@@ -162,58 +158,64 @@
             }
         }
 
-
         // Словарь с городами по областям
-const citiesByRegion = {
-    'Брестская область': ['Брест', 'Барановичи', 'Пинск', 'Кобрин', 'Берёза', 'Лунинец', 'Ивацевичи', 'Пружаны', 'Иваново', 'Дрогичин', 'Ганцевичи', 'Жабинка', 'Столин', 'Микашевичи', 'Белоозёрск', 'Малорита', 'Ляховичи', 'Каменец'],
-    'Витебская область': ['Витебск', 'Орша', 'Новополоцк', 'Полоцк', 'Поставы', 'Глубокое', 'Лепель', 'Новолукомль', 'Городок', 'Барань', 'Толочин', 'Браслав', 'Чашники', 'Миоры', 'Дубровно', 'Докшицы', 'Верхнедвинск', 'Сенно'],
-    'Гомельская область': ['Гомель', 'Мозырь', 'Жлобин', 'Светлогорск', 'Речица', 'Калинковичи', 'Рогачёв', 'Добруш', 'Житковичи', 'Хойники', 'Петриков', 'Ельск', 'Буда-Кошелёво', 'Наровля', 'Ветка', 'Чечерск', 'Октябрьский', 'Лельчицы'],
-    'Гродненская область': ['Гродно', 'Лида', 'Слоним', 'Волковыск', 'Сморгонь', 'Новогрудок', 'Ошмяны', 'Щучин', 'Мосты', 'Берёзовка', 'Ивье', 'Дятлово', 'Скидель', 'Островец', 'Кореличи', 'Вороново', 'Зельва', 'Свислочь'],
-    'Минская область': ['Минск', 'Борисов', 'Солигорск', 'Молодечно', 'Жодино', 'Слуцк', 'Вилейка', 'Дзержинск', 'Марьина Горка', 'Столбцы', 'Несвиж', 'Заславль', 'Фаниполь', 'Березино', 'Любань', 'Старые Дороги', 'Воложин', 'Узда', 'Копыль', 'Клецк', 'Червень', 'Смолевичи', 'Мядель'],
-    'Могилевская область': ['Могилёв', 'Бобруйск', 'Горки', 'Осиповичи', 'Кричев', 'Быхов', 'Климовичи', 'Шклов', 'Костюковичи', 'Чаусы', 'Мстиславль', 'Белыничи', 'Кировск', 'Чериков', 'Славгород', 'Круглое', 'Кличев', 'Дрибин'],
-    'Минск': ['Минск']
-};
+        const citiesByRegion = {
+            'Брестская область': ['Брест', 'Барановичи', 'Пинск', 'Кобрин', 'Берёза', 'Лунинец', 'Ивацевичи', 'Пружаны', 'Иваново', 'Дрогичин', 'Ганцевичи', 'Жабинка', 'Столин', 'Микашевичи', 'Белоозёрск', 'Малорита', 'Ляховичи', 'Каменец'],
+            'Витебская область': ['Витебск', 'Орша', 'Новополоцк', 'Полоцк', 'Поставы', 'Глубокое', 'Лепель', 'Новолукомль', 'Городок', 'Барань', 'Толочин', 'Браслав', 'Чашники', 'Миоры', 'Дубровно', 'Докшицы', 'Верхнедвинск', 'Сенно'],
+            'Гомельская область': ['Гомель', 'Мозырь', 'Жлобин', 'Светлогорск', 'Речица', 'Калинковичи', 'Рогачёв', 'Добруш', 'Житковичи', 'Хойники', 'Петриков', 'Ельск', 'Буда-Кошелёво', 'Наровля', 'Ветка', 'Чечерск', 'Октябрьский', 'Лельчицы'],
+            'Гродненская область': ['Гродно', 'Лида', 'Слоним', 'Волковыск', 'Сморгонь', 'Новогрудок', 'Ошмяны', 'Щучин', 'Мосты', 'Берёзовка', 'Ивье', 'Дятлово', 'Скидель', 'Островец', 'Кореличи', 'Вороново', 'Зельва', 'Свислочь'],
+            'Минская область': ['Минск', 'Борисов', 'Солигорск', 'Молодечно', 'Жодино', 'Слуцк', 'Вилейка', 'Дзержинск', 'Марьина Горка', 'Столбцы', 'Несвиж', 'Заславль', 'Фаниполь', 'Березино', 'Любань', 'Старые Дороги', 'Воложин', 'Узда', 'Копыль', 'Клецк', 'Червень', 'Смолевичи', 'Мядель'],
+            'Могилевская область': ['Могилёв', 'Бобруйск', 'Горки', 'Осиповичи', 'Кричев', 'Быхов', 'Климовичи', 'Шклов', 'Костюковичи', 'Чаусы', 'Мстиславль', 'Белыничи', 'Кировск', 'Чериков', 'Славгород', 'Круглое', 'Кличев', 'Дрибин'],
+            'Минск': ['Минск']
+        };
 
-function updateCities() {
-    const regionSelect = document.getElementById('region');
-    const cityInput = document.getElementById('city');
-    const citiesDatalist = document.getElementById('cities');
-    
-    // Очищаем список городов
-    citiesDatalist.innerHTML = '';
-    cityInput.value = '';
-    
-    // Если выбрана область, загружаем соответствующие города
-    if (regionSelect.value && citiesByRegion[regionSelect.value]) {
-        citiesByRegion[regionSelect.value].forEach(city => {
-            const option = document.createElement('option');
-            option.value = city;
-            citiesDatalist.appendChild(option);
+        function updateCities() {
+            const regionSelect = document.getElementById('region');
+            const citySelect = document.getElementById('city');
+            
+            // Очищаем список городов
+            citySelect.innerHTML = '';
+            
+            // Добавляем опцию "Все города"
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Все города';
+            citySelect.appendChild(defaultOption);
+            
+            // Если выбрана область, загружаем соответствующие города
+            if (regionSelect.value && citiesByRegion[regionSelect.value]) {
+                citiesByRegion[regionSelect.value].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Если в URL есть параметр region, устанавливаем его
+            const urlParams = new URLSearchParams(window.location.search);
+            const regionParam = urlParams.get('region');
+            if (regionParam) {
+                document.getElementById('region').value = regionParam;
+                updateCities();
+            }
+            
+            // Если в URL есть параметр city, устанавливаем его
+            const cityParam = urlParams.get('city');
+            if (cityParam) {
+                // Нужно подождать пока обновится список городов
+                setTimeout(() => {
+                    document.getElementById('city').value = cityParam;
+                }, 100);
+            }
         });
-    }
-}
-
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Если в URL есть параметр region, устанавливаем его
-    const urlParams = new URLSearchParams(window.location.search);
-    const regionParam = urlParams.get('region');
-    if (regionParam) {
-        document.getElementById('region').value = regionParam;
-        updateCities();
-    }
-    
-    // Если в URL есть параметр city, устанавливаем его
-    const cityParam = urlParams.get('city');
-    if (cityParam) {
-        document.getElementById('city').value = cityParam;
-    }
-});
     </script>
   </main>
 {% endblock %}
 
-
- {% block js %} 
+{% block js %} 
  
- {% endblock %}
+{% endblock %}

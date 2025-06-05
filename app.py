@@ -421,7 +421,7 @@ def mark_notification_as_read(notification_id):
     notification.is_read = True
     db.session.commit()
     
-    return redirect(url_for('card', id=notification.article_id))
+    return redirect(url_for('profile'))
 
 
 @app.route('/mark-all-notifications-as-read', methods=['GET'])
@@ -453,23 +453,32 @@ def catalog():
         max_price_all = db.session.query(func.max(Articles.price)).scalar()
         query = Articles.query
         
-        # Получаем уникальные города для фильтрации в форме
-        addresses = db.session.query(Articles.address).distinct().all()
-        addresses = [a[0] for a in addresses if a[0]]
-        
+        # Словарь городов по областям (должен соответствовать тому, что в шаблоне)
+        cities_by_region = {
+            'Брестская область': ['Брест', 'Барановичи', 'Пинск', 'Кобрин', 'Берёза', 'Лунинец', 'Ивацевичи', 'Пружаны', 'Иваново', 'Дрогичин', 'Ганцевичи', 'Жабинка', 'Столин', 'Микашевичи', 'Белоозёрск', 'Малорита', 'Ляховичи', 'Каменец'],
+            'Витебская область': ['Витебск', 'Орша', 'Новополоцк', 'Полоцк', 'Поставы', 'Глубокое', 'Лепель', 'Новолукомль', 'Городок', 'Барань', 'Толочин', 'Браслав', 'Чашники', 'Миоры', 'Дубровно', 'Докшицы', 'Верхнедвинск', 'Сенно'],
+            'Гомельская область': ['Гомель', 'Мозырь', 'Жлобин', 'Светлогорск', 'Речица', 'Калинковичи', 'Рогачёв', 'Добруш', 'Житковичи', 'Хойники', 'Петриков', 'Ельск', 'Буда-Кошелёво', 'Наровля', 'Ветка', 'Чечерск', 'Октябрьский', 'Лельчицы'],
+            'Гродненская область': ['Гродно', 'Лида', 'Слоним', 'Волковыск', 'Сморгонь', 'Новогрудок', 'Ошмяны', 'Щучин', 'Мосты', 'Берёзовка', 'Ивье', 'Дятлово', 'Скидель', 'Островец', 'Кореличи', 'Вороново', 'Зельва', 'Свислочь'],
+            'Минская область': ['Минск', 'Борисов', 'Солигорск', 'Молодечно', 'Жодино', 'Слуцк', 'Вилейка', 'Дзержинск', 'Марьина Горка', 'Столбцы', 'Несвиж', 'Заславль', 'Фаниполь', 'Березино', 'Любань', 'Старые Дороги', 'Воложин', 'Узда', 'Копыль', 'Клецк', 'Червень', 'Смолевичи', 'Мядель'],
+            'Могилевская область': ['Могилёв', 'Бобруйск', 'Горки', 'Осиповичи', 'Кричев', 'Быхов', 'Климовичи', 'Шклов', 'Костюковичи', 'Чаусы', 'Мстиславль', 'Белыничи', 'Кировск', 'Чериков', 'Славгород', 'Круглое', 'Кличев', 'Дрибин'],
+            'Минск': ['Минск']
+        }
+
         # Фильтрация по региону и городу
         if region:
             if city:
+                # Если выбран конкретный город - фильтруем по нему
                 query = query.filter(Articles.address.ilike(f"%{city}%"))
             else:
-                # Если город не выбран, фильтруем по всем городам области
-                if region == "Минск":
-                    query = query.filter(Articles.address.ilike("%Минск%"))
-                else:
-                    query = query.filter(or_(
-                        Articles.address.ilike(f"%{region}%"),
-                        Articles.address.ilike(f"%{region.split()[0]}%")  # Например, для "Брестская область" ищет "Брест"
-                    ))
+                # Если город не выбран - фильтруем по всем городам области
+                cities_in_region = cities_by_region.get(region, [])
+                if cities_in_region:
+                    # Создаем условия для каждого города в области
+                    region_filters = []
+                    for city_name in cities_in_region:
+                        region_filters.append(Articles.address.ilike(f"%{city_name}%"))
+                    # Объединяем условия через OR
+                    query = query.filter(or_(*region_filters))
         
         if category:
             query = query.filter(Articles.category == category)
@@ -490,7 +499,6 @@ def catalog():
         filtered_articles = query.all()
         
         return render_template("catalog.html",
-            addresses=addresses,
             datetime=datetime,
             timedelta=timedelta,
             articles=filtered_articles,
@@ -582,6 +590,15 @@ def delete_article(id):
     db.session.delete(obj)
     db.session.commit()
     flash("Запись удалена!", category="bad")
+    message = f"Ваше объявление '{obj.title}' было удалено!"
+    notification = Notification(
+            user_id=obj.id_user,
+            message=message,
+            article_id=obj.id,
+            is_read=False
+        )
+    db.session.add(notification)
+    db.session.commit()
     return redirect('/catalog')
 
 
@@ -707,7 +724,7 @@ def get_available_dates(article_id):
     
     if article.type_app == "Посуточная":
         # Для посуточной - все даты на 3 месяца вперед, кроме забронированных
-        for i in range(365):  # 3 месяца
+        for i in range(365):  # 12 месяца
             date = today + timedelta(days=i)
             if date not in booked_dates:
                 available_dates.append(date.strftime('%Y-%m-%d'))
@@ -723,7 +740,7 @@ def get_available_dates(article_id):
                 current_month = 1
                 current_year += 1
         
-        for i in range(12):  # 3 месяца вперед
+        for i in range(12):  # 12 месяца вперед
             month = current_month + i
             year = current_year
             if month > 12:
