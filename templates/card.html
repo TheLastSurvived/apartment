@@ -24,8 +24,9 @@
             >
               Изменить
             </button>
+            {%if active_user.root==0%}
             <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
-           
+            {%endif%}
             <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">
