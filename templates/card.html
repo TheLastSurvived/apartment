@@ -8,7 +8,7 @@
     <main>
         <div class="container my-5">
            {%if active_user.root==1%}
-            
+            <a href="/delete-article/{{article.id}}" class="btn btn-outline-danger mb-3">Удалить</a>
             {% if article.hide %}
                 <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#approveModal">
                     Одобрить
