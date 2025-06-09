@@ -28,7 +28,7 @@
             </a>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body " style="max-height: 400px; overflow-y: auto;">
         {% if notifications %}
         <div class="list-group">
             {% for notification in notifications %}
@@ -36,9 +36,9 @@
                class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
                 <div class="d-flex w-100 justify-content-between">
                     <div>
-                        <h6 class="mb-1">{{ notification.message }}</h6>
+                        <h6 class="mb-1"> {{ notification.message }} </h6>
                         {% if notification.article %}
-                        <small class="text-muted">Объявление: {{ notification.article.title }}</small>
+                            <small class="text-muted">Объявление: {{ notification.article.title }}</small>
                         {% endif %}
                     </div>
                     <small>{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
@@ -205,12 +205,18 @@
          <!-- Мои объявления -->
          <div class="card mb-4 shadow-sm">
           <div class="card-header bg-warning text-dark">
-              <h4 class="my-0 fw-normal">Мои объявления</h4>
+            <div class="d-flex justify-content-between align-items-center">
+            <h4 class="my-0 fw-normal">Мои объявления</h4>
+            <a href="{{ url_for('moderation_articles') }}" class="btn btn-sm btn-outline-dark">
+                 На модерации ({{ articles|selectattr('hide')|list|length }})
+            </a>
+        </div>
           </div>
           <div class="card-body" style="max-height: 400px; overflow-y: auto;">
               {% if articles %}
               <div class="row row-cols-1 g-3">
                   {% for article in articles %}
+                  {%if not article.hide%}
                   <div class="col">
                       <div class="card h-100">
                           <img src="../static/img/upload/{{article.image_name}}" class="card-img-top" alt="{{article.title}}" style="height: 120px; object-fit: cover;">
@@ -234,6 +240,7 @@
                           </div>
                       </div>
                   </div>
+                   {% endif %}
                   {% endfor %}
               </div>
               {% else %}

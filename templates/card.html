@@ -7,14 +7,65 @@
 {{ ckeditor.load() }}
     <main>
         <div class="container my-5">
-            {%if active_user.root==1%}
-                <a href="/delete-article/{{article.id}}" class="btn btn-danger mb-3">Удалить</a>
-            {%if article.hide%}
-                <a href="/change-status/{{article.id}}" class="btn btn-success mb-3">Опубликовать</a>
-            {%else%}
+           {%if active_user.root==1%}
+            
+            {% if article.hide %}
+                <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#approveModal">
+                    Одобрить
+                </button>
+                <!-- Модальное окно для отклонения с причиной -->
+                <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    Отклонить
+                </button>
+            {% else %}
                 <a href="/change-status/{{article.id}}" class="btn btn-danger mb-3">Скрыть</a>
-            {%endif%}
-                    {%endif%}
+            {% endif %}
+        {% endif %}
+
+<!-- Модальное окно для одобрения -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Одобрить объявление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/approve-article/{{article.id}}" method="post">
+                <div class="modal-body">
+                    <p>Вы уверены, что хотите одобрить это объявление?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Одобрить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для отклонения -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отклонить объявление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/reject-article/{{article.id}}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">Причина отклонения:</label>
+                        <textarea class="form-control" id="rejectReason" name="reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Отклонить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
             {%if 'name' in session and active_user.id==article.id_user %}
             <button
               type="button"
@@ -124,7 +175,12 @@
                 <div class="col-md-6">
                   
                     <div class="gallery-main">
+                        <div class='position-relative'> 
+                            {% if article.hide %}
+                  <div class="moderation-label">На модерации</div>
+                  {% endif %}
                         <img id="mainImage" src="../../static/img/upload/{{article.image_name}}" width="100%" alt="Основное изображение товара">
+                         </div>       
                         <div class="image-navigation my-2 d-flex justify-content-between">
                             <button class="btn btn-outline-success prev-btn" onclick="prevImage()">←</button>
                             <button class="btn btn-outline-success next-btn" onclick="nextImage()">→</button>
@@ -132,7 +188,7 @@
                         <div class="row gallery-thumbnails my-3">
                           <h3>Галерея</h3>
                           <div class="col-md-4 mb-3">
-                                <div class="card">
+                                <div class="card ">
                                     <img src="../../static/img/upload/{{article.image_name}}" onclick="changeImage(this.src)" class="card-img-top" alt="Дополнительное изображение">
     
                                 </div>

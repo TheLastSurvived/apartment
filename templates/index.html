@@ -87,6 +87,7 @@
         <h1 class="text-center">Наши предложения</h1>
         <div class="row">
           {%for article in random_articles%}
+           {%if not article.hide%}
           <div class="col-md-4">
             <a href="/card/{{article.id}}" class="card-link">
               <div class="card">
@@ -107,6 +108,7 @@
               </div>
             </a>
           </div>
+          {% endif %}
           {%endfor%}
          
         </div>

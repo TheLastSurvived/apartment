@@ -184,6 +184,17 @@ def index():
     return render_template("index.html",random_articles=random_articles)
 
 
+@app.route('/moderation-articles')
+def moderation_articles():
+    if not 'name' in session:
+        abort(401)
+    
+    current_user = Users.query.filter_by(email=session['name']).first()
+    articles = Articles.query.filter_by(id_user=current_user.id, hide=True).all()
+    
+    return render_template("moderation_articles.html", articles=articles)
+
+
 @app.route('/chat/<int:article_id>/<int:recipient_id>')
 def chat(article_id, recipient_id):
     current_user = Users.query.filter_by(email=session['name']).first()
@@ -516,9 +527,10 @@ def card(id):
     if 'name' in session:
         total_user = Users.query.filter_by(email=session['name']).first()
 
-# Корректное условие с учетом приоритета операций
-    if not article or (article.hide and (not total_user or total_user.root != 1)):
+    # Корректное условие с учетом приоритета операций
+    if not article or (article.hide and (not total_user or (total_user.root != 1 and article.id_user != total_user.id))):
         abort(404)
+
     check = Orders.query.filter_by(id_article=article.id).all()
     images = Image.query.filter_by(article_id=id).all()
     if request.method == 'POST':
@@ -602,7 +614,7 @@ def delete_article(id):
     return redirect('/catalog')
 
 
-@app.route('/change-status/<int:id>')
+@app.route('/change-status/<int:id>', methods=['GET', 'POST'])
 def change_article(id):
     if not 'name' in session:
         abort(401)
@@ -610,9 +622,25 @@ def change_article(id):
     article = Articles.query.get_or_404(id)
     current_user = Users.query.filter_by(email=session['name']).first()
     
-    # Проверяем, что пользователь имеет права на изменение статуса
     if article.id_user != current_user.id and current_user.root != 1:
         abort(403)
+    
+    if request.method == 'POST' and current_user.root == 1:
+        # Это запрос от админа с причиной отклонения
+        reason = request.form.get('reason', '')
+        article.hide = True  # Оставляем на модерации
+        
+        notification = Notification(
+            user_id=article.id_user,
+            message=f"Ваше объявление '{article.title}' было отклонено модератором. Причина: {reason}",
+            article_id=article.id,
+            is_read=False
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        flash("Объявление отклонено с уведомлением пользователя", "ok")
+        return redirect(url_for("card", id=id))
     
     # Запоминаем предыдущее состояние
     previous_status = article.hide
@@ -622,7 +650,7 @@ def change_article(id):
     db.session.commit()
     
     # Создаем уведомление, если статус изменился и это не админ
-    if current_user.root != 0:
+    if current_user.root != 1:
         if previous_status:
             message = f"Ваше объявление '{article.title}' прошло модерацию и теперь видно всем пользователям"
         else:
@@ -639,6 +667,58 @@ def change_article(id):
     
     flash("Статус изменен!", category="ok")
     return redirect(url_for("card", id=id))
+
+
+@app.route('/approve-article/<int:id>', methods=['POST'])
+def approve_article(id):
+    if not 'name' in session:
+        abort(401)
+    
+    current_user = Users.query.filter_by(email=session['name']).first()
+    if current_user.root != 1:
+        abort(403)
+    
+    article = Articles.query.get_or_404(id)
+    article.hide = False
+    
+    # Создаем уведомление для владельца
+    notification = Notification(
+        user_id=article.id_user,
+        message=f"Ваше объявление '{article.title}' было одобрено и опубликовано",
+        article_id=article.id,
+        is_read=False
+    )
+    db.session.add(notification)
+    db.session.commit()
+    
+    flash("Объявление одобрено и опубликовано", "ok")
+    return redirect(url_for("card", id=id))
+
+@app.route('/reject-article/<int:id>', methods=['POST'])
+def reject_article(id):
+    if not 'name' in session:
+        abort(401)
+    
+    current_user = Users.query.filter_by(email=session['name']).first()
+    if current_user.root != 1:
+        abort(403)
+    
+    article = Articles.query.get_or_404(id)
+    reason = request.form.get('reason', '')
+    
+    # Создаем уведомление для владельца с причиной
+    notification = Notification(
+        user_id=article.id_user,
+        message=f"Ваше объявление '{article.title}' было отклонено. Причина: {reason}",
+        article_id=article.id,
+        is_read=False
+    )
+    db.session.add(notification)
+    db.session.commit()
+    
+    flash("Объявление отклонено с уведомлением пользователя", "ok")
+    return redirect(url_for("card", id=id))
+
 
 
 @app.route('/delete-order/<int:id>')
@@ -692,7 +772,7 @@ def add_order(id_user, id_article):
                 # Создаем уведомление для владельца
                 notification = Notification(
                     user_id=article.id_user,
-                    message=f"Ваше жилье '{article.title}' забронировано на {date_str}",
+                    message=f"Ваше жилье '{article.title}' забронировано на {date_str} ",
                     article_id=article.id,
                     is_read=False
                 )

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Объявления на модерации
+{% endblock %}
+
+{% block main %}
+<main>
+    <div class="container my-5">
+        {% with messages = get_flashed_messages(True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="m-2 flash {{category}}">{{message}}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="my-0 fw-normal">Объявления на модерации</h4>
+            </div>
+            <div class="card-body">
+                {% if articles %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for article in articles %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <img src="{{ url_for('static', filename='img/upload/' + article.image_name) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ article.title }}" 
+                                         style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ article.title }}</h5>
+                                        <p class="card-text text-muted">{{ article.address }}</p>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                Создано: {{ article.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                            </small>
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{{ url_for('card', id=article.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                Редактировать
+                                            </a>
+                                            <a href="{{ url_for('delete_article', id=article.id) }}" 
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Вы уверены, что хотите удалить это объявление?')">
+                                                Удалить
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                        <p class="text-muted">У вас нет объявлений на модерации</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
