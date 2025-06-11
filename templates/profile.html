@@ -33,12 +33,15 @@
         <div class="list-group">
             {% for notification in notifications %}
             <a href="{{url_for('mark_notification_as_read', notification_id=notification.id)}}" 
-               class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
+            class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
                 <div class="d-flex w-100 justify-content-between">
                     <div>
-                        <h6 class="mb-1"> {{ notification.message }} </h6>
+                        <h6 class="mb-1">{{ notification.message }}</h6>
                         {% if notification.article %}
                             <small class="text-muted">Объявление: {{ notification.article.title }}</small>
+                        {% endif %}
+                        {% if notification.redirect_to_chat %}
+                            <small class="text-primary d-block mt-1">Нажмите, чтобы перейти в чат</small>
                         {% endif %}
                     </div>
                     <small>{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>

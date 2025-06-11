@@ -1,13 +1,22 @@
 {% extends 'base.html' %}
-{% block title %}Чат с {{ recipient.name }}{% endblock %}
+{% block title %}Чат по объявлению: {{ article.title }}{% endblock %}
 
 {% block main %}
 <main>
     <div class="container my-5">
         <div class="row">
             <div class="col-md-8 mx-auto">
-                <h2>Чат по аренде: {{ article.title }}</h2>
-                <p>Собственник: {{ recipient.name }} {{ recipient.surname }}</p>
+               <!-- В шапке чата замените на: -->
+            <div class="chat-header">
+                <h5>Чат по объявлению: {{ article.title }}</h5>
+                <p>
+                    {% if is_landlord %}
+                        Вы (арендодатель) ↔ {{ interlocutor.name }} {{ interlocutor.surname }} (арендатор)
+                    {% else %}
+                        Вы (арендатор) ↔ {{ interlocutor.name }} {{ interlocutor.surname }} (арендодатель)
+                    {% endif %}
+                </p>
+            </div>
                 
                 <div class="chat-container mb-4" style="height: 500px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
                     {% for message in messages %}

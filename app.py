@@ -14,6 +14,7 @@ from sqlalchemy import or_,case,and_
 import os
 from markupsafe import Markup
 from flask_admin.form import ImageUploadField
+import re
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -25,6 +26,16 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 db = SQLAlchemy(app)
 ckeditor = CKEditor(app)
 migrate = Migrate(app, db)
+
+
+def convert_links(text):
+    # Регулярное выражение для поиска ссылок в формате [текст](URL)
+    link_pattern = re.compile(r'\[(.*?)\]\((.*?)\)')
+    # Заменяем все вхождения на HTML-ссылки
+    return Markup(link_pattern.sub(r'<a href="\2" class="notification-link" target="_blank">\1</a>', text))
+
+# Добавляем фильтр в Jinja2
+app.jinja_env.filters['convert_links'] = convert_links
 
 
 class Users(db.Model):
@@ -109,6 +120,9 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     article_id = db.Column(db.Integer, db.ForeignKey('articles.id'))
+    redirect_to_chat = db.Column(db.Boolean, default=False)  # Флаг для перенаправления в чат
+    chat_article_id = db.Column(db.Integer)  # ID статьи для чата
+    chat_user_id = db.Column(db.Integer)  # ID пользователя для чата
     
     user = db.relationship('Users', backref='notifications')
     article = db.relationship('Articles')  
@@ -200,8 +214,30 @@ def chat(article_id, recipient_id):
     current_user = Users.query.filter_by(email=session['name']).first()
     article = Articles.query.get_or_404(article_id)
     recipient = Users.query.get_or_404(recipient_id)
+    # Определяем, кто является арендодателем (владелец объявления)
+    landlord_id = article.id_user
     
-    # Получаем все сообщения между текущим пользователем и получателем для данной статьи
+    # Определяем, кто является арендатором
+    # Если текущий пользователь - владелец объявления, то recipient_id - арендатор
+    # Иначе текущий пользователь - арендатор, а recipient_id должен быть владельцем
+    if current_user.id == landlord_id:
+        tenant_id = recipient_id
+        # Проверяем, что переданный recipient_id действительно арендовал это жилье
+        if not Orders.query.filter_by(id_article=article_id, id_user=recipient_id).first():
+            abort(403, description="Этот пользователь не арендовал данное жилье")
+    else:
+        tenant_id = current_user.id
+        # Проверяем, что текущий пользователь арендовал это жилье
+        if not Orders.query.filter_by(id_article=article_id, id_user=current_user.id).first():
+            abort(403, description="Вы не арендовали данное жилье")
+        # Убеждаемся, что recipient_id - это владелец объявления
+        if recipient_id != landlord_id:
+            abort(403, description="Некорректный собеседник")
+    
+    # Получаем данные собеседника
+    interlocutor = Users.query.get_or_404(recipient_id)
+    
+    # Получаем сообщения
     messages = Messages.query.filter(
         ((Messages.sender_id == current_user.id) & (Messages.recipient_id == recipient_id)) |
         ((Messages.sender_id == recipient_id) & (Messages.recipient_id == current_user.id)),
@@ -217,8 +253,10 @@ def chat(article_id, recipient_id):
     return render_template('chat.html', 
                          messages=messages, 
                          article=article, 
-                         recipient=recipient,
-                         current_user=current_user)
+                         interlocutor=interlocutor,
+                         current_user=current_user,
+                         is_landlord=current_user.id == landlord_id,recipient=recipient)
+
 
 @app.route('/send_message/<int:article_id>/<int:recipient_id>', methods=['POST'])
 def send_message(article_id, recipient_id):
@@ -431,6 +469,21 @@ def mark_notification_as_read(notification_id):
     
     notification.is_read = True
     db.session.commit()
+    current_user = Users.query.filter_by(email=session['name']).first()
+    if notification.redirect_to_chat:
+        # Для владельца объявления: чат с арендатором (chat_user_id)
+        # Для арендатора: чат с владельцем (user_id объявления)
+        if notification.user_id == current_user.id:
+            # Это владелец объявления - открываем чат с арендатором
+            return redirect(url_for('chat', 
+                                 article_id=notification.chat_article_id, 
+                                 recipient_id=notification.chat_user_id))
+        else:
+            # Это арендатор - открываем чат с владельцем
+            article = Articles.query.get(notification.chat_article_id)
+            return redirect(url_for('chat',
+                                 article_id=notification.chat_article_id,
+                                 recipient_id=article.id_user))
     
     return redirect(url_for('profile'))
 
@@ -751,7 +804,6 @@ def add_order(id_user, id_article):
                     flash(f"Дата {date_str} уже прошла!", category="bad")
                     continue
                 
-                # Проверка на существующее бронирование
                 existing_order = Orders.query.filter_by(
                     id_article=id_article,
                     date=date
@@ -761,7 +813,6 @@ def add_order(id_user, id_article):
                     flash(f"Дата {date_str} уже занята!", category="bad")
                     continue
                 
-                # Создаем бронирование
                 order = Orders(
                     date=date,
                     id_user=id_user,
@@ -769,13 +820,16 @@ def add_order(id_user, id_article):
                 )
                 db.session.add(order)
                 
-                # Создаем уведомление для владельца
+                # Создаем уведомление с флагом перенаправления в чат
                 notification = Notification(
-                    user_id=article.id_user,
-                    message=f"Ваше жилье '{article.title}' забронировано на {date_str} ",
-                    article_id=article.id,
-                    is_read=False
-                )
+                user_id=article.id_user,  # Уведомление для владельца объявления
+                message=f"Ваше жилье '{article.title}' забронировано на {date_str}",
+                article_id=article.id,
+                redirect_to_chat=True,
+                chat_article_id=article.id,
+                chat_user_id=id_user,  # ID арендатора
+                is_read=False
+            )
                 db.session.add(notification)
             
             db.session.commit()
