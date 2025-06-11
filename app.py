@@ -423,9 +423,57 @@ def profile():
         abort(401)
     total_user = Users.query.filter_by(email=session['name']).first()
     articles = Articles.query.filter_by(id_user=total_user.id).all()
-    orders = Orders.query.filter_by(id_user=total_user.id).join(Articles).all()
+    
+    # Получаем все заказы пользователя
+    orders = Orders.query.filter_by(id_user=total_user.id).join(Articles).order_by(Orders.date.asc()).all()
+    
+    # Группируем последовательные даты
+    grouped_orders = []
+    temp_group = []
+    
+    for order in orders:
+        if not temp_group:
+            temp_group.append(order)
+        else:
+            last_date = temp_group[-1].date
+            current_date = order.date
+            if (current_date - last_date).days == 1:
+                temp_group.append(order)
+            else:
+                if len(temp_group) > 1:
+                    grouped_orders.append({
+                        'type': 'range',
+                        'start_date': temp_group[0].date,
+                        'end_date': temp_group[-1].date,
+                        'article': temp_group[0].article
+                    })
+                else:
+                    grouped_orders.append({
+                        'type': 'single',
+                        'date': temp_group[0].date,
+                        'article': temp_group[0].article
+                    })
+                temp_group = [order]
+    
+    # Добавляем последнюю группу
+    if temp_group:
+        if len(temp_group) > 1:
+            grouped_orders.append({
+                'type': 'range',
+                'start_date': temp_group[0].date,
+                'end_date': temp_group[-1].date,
+                'article': temp_group[0].article
+            })
+        else:
+            grouped_orders.append({
+                'type': 'single',
+                'date': temp_group[0].date,
+                'article': temp_group[0].article
+            })
+    
     notifications = Notification.query.filter_by(user_id=total_user.id)\
         .order_by(Notification.created_at.desc()).all()
+    
     if request.method == 'POST':
         title = request.form.get('name')
         address = request.form.get('address')
@@ -453,8 +501,7 @@ def profile():
         db.session.commit()
         flash("Запись добавлена!", category="ok")
         return redirect(url_for("profile"))
-    return render_template("profile.html",articles=articles,orders=orders,notifications=notifications)
-
+    return render_template("profile.html",articles=articles,grouped_orders=grouped_orders,notifications=notifications,timedelta=timedelta)
 
 @app.route('/mark-notification-as-read/<int:notification_id>')
 def mark_notification_as_read(notification_id):
@@ -774,13 +821,25 @@ def reject_article(id):
 
 
 
-@app.route('/delete-order/<int:id>')
-def delete_order(id):
-    obj = Orders.query.filter_by(id=id).first()
-    db.session.delete(obj)
-    db.session.commit()
-    flash("Заказ отменен!", category="bad")
-    return redirect('/profile')
+@app.route('/delete-order/<string:date>/<int:article_id>')
+def delete_order_by_date(date, article_id):
+    if not 'name' in session:
+        abort(401)
+    
+    user = Users.query.filter_by(email=session['name']).first()
+    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+    
+    order = Orders.query.filter_by(
+        id_user=user.id,
+        id_article=article_id
+    ).first()
+    
+    if order:
+        db.session.delete(order)
+        db.session.commit()
+        flash(f"Заказ на {date_obj.strftime('%d.%m.%Y')} удален!", category="bad")
+    
+    return redirect(url_for('profile'))
 
 
 @app.route('/add-order/<int:id_user>/<int:id_article>', methods=['POST'])
