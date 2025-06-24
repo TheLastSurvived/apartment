@@ -61,7 +61,7 @@
                 <option value="Дома" {% if request.args.get('category') == 'Дома' %}selected{% endif %}>Дома</option>
             </select>
 
-            <div id="roomTypeContainer" style="display: {% if request.args.get('category') == 'Квартиры' %}block{% else %}none{% endif %};">
+            <div id="roomTypeContainer" style="display: {% if request.args.get('category') in ['Квартиры', 'Дома'] %}block{% else %}none{% endif %};
                 <label for="room_type" class="form-label mt-2">Количество комнат:</label>
                 <select name="room_type" id="room_type" class="form-select">
                     <option value="">Все</option>
@@ -195,6 +195,8 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
+
+          toggleRoomType();
             // Если в URL есть параметр region, устанавливаем его
             const urlParams = new URLSearchParams(window.location.search);
             const regionParam = urlParams.get('region');
