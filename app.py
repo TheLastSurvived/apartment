@@ -43,7 +43,7 @@ class Users(db.Model):
     name = db.Column(db.String(100))
     surname = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
     root = db.Column(db.Integer, default=0)
     avatar = db.Column(db.String(120), default='default.jpg')
     
@@ -681,18 +681,33 @@ def reg():
     if request.method == 'POST':
         try:
             name = request.form.get('name')
-            surname = request.form.get('name')
+            surname = request.form.get('surname')  # Обратите внимание, здесь исправлено с 'name' на 'surname'
             email = request.form.get('email')
             password = request.form.get('password')
-            user = Users(name=name,surname=surname,email=email,password=md5(password.encode()).hexdigest())
+            
+            # Проверяем, существует ли уже пользователь с таким email
+            existing_user = Users.query.filter_by(email=email).first()
+            if existing_user:
+                flash("Пользователь с таким email уже существует!", category="bad")
+                return redirect(url_for("reg"))
+            
+            # Если email уникальный, создаем нового пользователя
+            user = Users(
+                name=name,
+                surname=surname,
+                email=email,
+                password=md5(password.encode()).hexdigest()
+            )
             db.session.add(user)
             db.session.commit()
             flash("Регистрация прошла успешно!", category="ok")
             return redirect(url_for("reg"))
-        except:
-            flash("Произошла ошибка! Проверьте введенные данные!", category="bad")
+            
+        except Exception as e:
+            flash(f"Произошла ошибка! Проверьте введенные данные! Ошибка: {str(e)}", category="bad")
             db.session.rollback()
             return redirect(url_for("reg"))
+    
     return render_template("reg.html")
 
 
