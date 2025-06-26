@@ -254,9 +254,32 @@
               {% endif %}
           </div>
       </div>
-        <div class="card shadow-sm">
-    <div class="card-header bg-secondary text-white">
+        <div class="card shadow-sm" id="my-orders">
+    <div class="card-header bg-secondary text-white d-flex  justify-content-between align-items-center">
         <h4 class="my-0 fw-normal">Мои заказы</h4>
+        {% if grouped_orders %}
+        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllOrdersModal">
+            <i class="bi bi-trash-fill"></i> Удалить все
+        </button>
+        {% endif %}
+        <!-- Modal для удаления всех заказов -->
+<div class="modal fade" id="deleteAllOrdersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                Вы уверены, что хотите удалить ВСЕ ваши заказы? Это действие нельзя отменить.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <a href="{{ url_for('delete_all_orders') }}" class="btn btn-danger">Удалить все</a>
+            </div>
+        </div>
+    </div>
+</div>
     </div>
     <div class="card-body" style="max-height: 300px; overflow-y: auto;">
         {% if not grouped_orders %}
@@ -305,15 +328,24 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                                     </div>
                                     <div class="modal-body">
+                                        
                                         <div class="list-group">
                                             {% for single_date in range((order.end_date - order.start_date).days + 1) %}
                                                 {% set current_date = order.start_date + timedelta(days=single_date) %}
-                                                <a href="/delete-order/{{ current_date.strftime('%Y-%m-%d') }}/{{ order.article.id }}" 
+                                                <a href="/delete-order/{{ current_date.strftime('%Y-%m-%d') }}/{{ order.article.id }}#my-orders" 
                                                 class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                                     <span class="fw-bold text-danger">Удалить за {{ current_date.strftime('%d.%m') }}</span>
                                                     <i class="bi bi-trash-fill text-danger"></i> <!-- Иконка удаления -->
                                                 </a>
                                             {% endfor %}
+                                        </div>
+                                         <!-- Добавьте эту кнопку перед списком дат -->
+                                        <div class="mb-3">
+                                            <a href="/delete-order-range/{{ order.start_date.strftime('%Y-%m-%d') }}/{{ order.end_date.strftime('%Y-%m-%d') }}/{{ order.article.id }}#my-orders" 
+                                            class="btn btn-danger w-100 my-3"
+                                            onclick="return confirm('Вы уверены, что хотите удалить ВСЕ выбранные даты?')">
+                                                <i class="bi bi-trash-fill"></i> Удалить все даты
+                                            </a>
                                         </div>
                                     </div>
                                     <div class="modal-footer">

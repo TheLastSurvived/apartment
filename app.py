@@ -854,6 +854,52 @@ def delete_order_by_date(date, article_id):
         db.session.commit()
         flash(f"Заказ на {date_obj.strftime('%d.%m.%Y')} удален!", category="bad")
     
+    return redirect(url_for('profile', _anchor='my-orders'))
+
+
+@app.route('/delete-all-orders')
+def delete_all_orders():
+    if not 'name' in session:
+        abort(401)
+    
+    user = Users.query.filter_by(email=session['name']).first()
+    
+    try:
+        # Удаляем все заказы пользователя
+        Orders.query.filter_by(id_user=user.id).delete()
+        db.session.commit()
+        flash("Все ваши заказы были успешно удалены!", "ok")
+    except Exception as e:
+        db.session.rollback()
+        flash("Произошла ошибка при удалении заказов!", "bad")
+        app.logger.error(f"Error deleting all orders: {str(e)}")
+    
+    return redirect(url_for('profile', _anchor='my-orders'))
+
+
+@app.route('/delete-order-range/<string:start_date>/<string:end_date>/<int:article_id>')
+def delete_order_range(start_date, end_date, article_id):
+    if not 'name' in session:
+        abort(401)
+    
+    user = Users.query.filter_by(email=session['name']).first()
+    start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    # Удаляем все заказы в этом диапазоне
+    orders_to_delete = Orders.query.filter(
+        Orders.id_user == user.id,
+        Orders.id_article == article_id,
+        Orders.date >= start_date_obj,
+        Orders.date <= end_date_obj
+    ).all()
+    
+    for order in orders_to_delete:
+        db.session.delete(order)
+    
+    db.session.commit()
+    
+    flash(f"Все заказы с {start_date_obj.strftime('%d.%m.%Y')} по {end_date_obj.strftime('%d.%m.%Y')} удалены!", category="bad")
     return redirect(url_for('profile'))
 
 
